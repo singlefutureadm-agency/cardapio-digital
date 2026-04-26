@@ -4,7 +4,7 @@ services:
     env: node
     rootDir: server
     plan: free
-    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy
+    buildCommand: npm ci && npx prisma generate
     startCommand: npm start
     envVars:
       - key: NODE_ENV
