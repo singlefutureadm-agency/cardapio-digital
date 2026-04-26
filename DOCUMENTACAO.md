@@ -26,7 +26,7 @@ Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard admi
 Infraestrutura:
 
   - Frontend  →  Vercel          (React 19 + Vite)
-  - Backend   →  Render          (Node.js 20 + Express)
+  - Backend   →  Render          (Node.js 20+ + Express)
   - Banco     →  Supabase        (PostgreSQL gerenciado)
   - Storage   →  Supabase        (imagens de pratos, artistas, fundo e planta)
   - Realtime  →  Socket.io       (pedidos em tempo real)
@@ -47,95 +47,113 @@ Fluxo principal:
 ## 2. ESTRUTURA DO PROJETO
 
   cardapio-digital/
-  ├── client/               → Frontend React
+  ├── client/                   → Frontend React
+  │   ├── hooks/
+  │   │   └── useShows.js       → hook useProximosShows()
   │   ├── src/
-  │   │   ├── config/       → Configuração centralizada de URLs
-  │   │   ├── components/   → Componentes reutilizáveis
-  │   │   ├── context/      → AuthContext, ThemeContext
-  │   │   ├── layouts/      → DashboardLayout, ClienteLayout
-  │   │   ├── pages/        → Páginas organizadas por área
-  │   │   ├── services/     → api.js (Axios), socket.js (Socket.io)
-  │   │   └── store/        → Zustand (carrinho e pedido)
-  │   ├── .env              → Variáveis locais (não commitado)
-  │   ├── .env.example      → Template das variáveis
-  │   └── vercel.json       → Configuração de deploy na Vercel
+  │   │   ├── App.jsx           → definição de todas as rotas
+  │   │   ├── config/
+  │   │   │   └── index.js      → API_BASE e API_URL centralizados
+  │   │   ├── components/       → componentes reutilizáveis
+  │   │   ├── context/          → AuthContext, ThemeContext
+  │   │   ├── layouts/          → DashboardLayout, ClienteLayout
+  │   │   ├── pages/            → páginas organizadas por área
+  │   │   │   ├── cliente/      → área do cliente (cardápio, checkout, shows)
+  │   │   │   └── dashboard/    → painel admin
+  │   │   ├── services/
+  │   │   │   ├── api.js        → instância Axios com interceptor JWT
+  │   │   │   └── socket.js     → instância Socket.io-client
+  │   │   └── store/            → Zustand (carrinho e pedido)
+  │   ├── .env                  → variáveis locais (não commitado)
+  │   ├── .env.production       → VITE_API_BASE_URL de produção (commitado)
+  │   ├── vercel.json           → rewrite SPA → index.html
+  │   └── tailwind.config.js
   │
-  ├── server/               → Backend Node.js
+  ├── server/                   → Backend Node.js
   │   ├── src/
-  │   │   ├── controllers/  → Lógica dos endpoints
-  │   │   ├── middlewares/  → Auth JWT, tratamento de erros
-  │   │   ├── routes/       → Definição das rotas HTTP
-  │   │   └── services/     → Regras de negócio e acesso ao banco
+  │   │   ├── app.js            → Express, CORS dinâmico, middlewares, rotas
+  │   │   ├── server.js         → HTTP server + Socket.io
+  │   │   ├── controllers/      → lógica dos endpoints
+  │   │   ├── middlewares/      → auth JWT, error handler, validação
+  │   │   ├── routes/           → definição das rotas HTTP
+  │   │   ├── services/         → regras de negócio e acesso ao banco
+  │   │   │   └── storage.service.js  → uploadFile/deleteFile (Supabase Storage)
+  │   │   └── validators/       → schemas Zod (auth, pedido)
   │   ├── prisma/
-  │   │   ├── schema.prisma → Definição completa do banco
-  │   │   └── migrations/   → Histórico de alterações no banco
-  │   ├── uploads/          → Imagens locais (apenas desenvolvimento)
-  │   ├── .env              → Variáveis locais (não commitado)
-  │   ├── .env.example      → Template das variáveis
-  │   └── render.yaml       → Configuração de deploy no Render
+  │   │   ├── schema.prisma     → definição completa do banco
+  │   │   ├── seed.js
+  │   │   └── migrations/       → histórico de migrations
+  │   └── uploads/              → imagens locais (apenas desenvolvimento)
   │
-  ├── render.yaml           → Config alternativa de deploy (raiz)
-  ├── .gitignore            → Arquivos ignorados pelo git
-  └── DOCUMENTACAO.md       → Este arquivo
+  ├── render.yaml               → configuração de deploy no Render
+  └── DOCUMENTACAO.md           → este arquivo
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## 3. CLIENT — FRONTEND
 
-  Tecnologias:  React 19, Vite, Tailwind CSS, Axios, Socket.io-client,
-                Zustand, GSAP, Recharts, React Router DOM 7
+  Tecnologias:  React 19, Vite 8, Tailwind CSS 3, Axios, Socket.io-client 4,
+                Zustand 5, GSAP, Recharts 3, @dnd-kit (drag-and-drop mesas),
+                React Router DOM 7, jwt-decode
 
   Porta local:  http://localhost:5173
 
 ### Rotas da aplicação
 
-  /                           → Landing Page (pública)
+  /                           → Landing Page (seção de próximos shows automática)
   /login                      → Login
   /register                   → Cadastro
   /selecionar-mesa            → Seleção de mesa (requer login)
   /menu-tv                    → Menu em tela cheia para TV (público)
-  /pedido/:id                 → Status do pedido
+  /pedido/:id                 → Status do pedido em tempo real
 
   /cliente/:mesa              → Área do cliente (requer login)
-    /cliente/:mesa            → Home com shows e ações rápidas
-    /cliente/:mesa/cardapio   → Cardápio com itens e carrinho
-    /cliente/:mesa/pedidos    → Histórico de pedidos
-    /cliente/:mesa/perfil     → Perfil e preferências
+    /cliente/:mesa            → Home com calendário de shows e ações rápidas
+    /cliente/:mesa/cardapio   → Cardápio com itens e carrinho flutuante
+    /cliente/:mesa/carrinho   → Carrinho de compras
+    /cliente/:mesa/checkout   → Checkout (escolha de pagamento)
+    /cliente/:mesa/pedidos    → Histórico de pedidos do cliente
+    /cliente/:mesa/perfil     → Perfil e preferências do cliente
 
   /dashboard                  → Área admin (requer login de ADMIN)
     /dashboard                → Visão geral com KPIs
-    /dashboard/cozinha        → Tela da cozinha (tempo real)
-    /dashboard/cardapio       → CRUD do cardápio
+    /dashboard/cozinha        → Tela da cozinha (tempo real, atualiza status)
+    /dashboard/cardapio       → CRUD do cardápio (itens, categorias, imagens)
     /dashboard/mesas          → Mapa de mesas drag-and-drop
     /dashboard/menu-tv        → Preview do menu TV
-    /dashboard/historico      → Histórico de pedidos com filtros
-    /dashboard/shows          → Calendário de shows
-    /dashboard/artistas       → Cadastro de artistas
-    /dashboard/shows/:id/metricas → Relatório pós-show
+    /dashboard/historico      → Histórico de pedidos com filtros e gráficos
+    /dashboard/shows          → Calendário de shows (CRUD)
+    /dashboard/artistas       → Cadastro e gerenciamento de artistas
+    /dashboard/shows/:id/metricas → Relatório pós-show com notas e pedidos
     /dashboard/usuarios       → Gerenciar usuários
     /dashboard/newsletter     → Lista de e-mails cadastrados
     /dashboard/preferencias   → Perguntas de perfil do público
     /dashboard/preferencias/analytics → Analytics de respostas
-    /dashboard/configuracoes  → Tema, glass effect e cores
+    /dashboard/configuracoes  → Tema, glass effect, cores e imagem de fundo
     /dashboard/pagamentos     → Confirmar pagamentos pendentes
 
 ### Configuração de URL (importante)
 
-  Todas as URLs do backend são geradas a partir de uma única variável:
+  Todas as URLs do backend partem de uma única variável de ambiente:
 
     client/src/config/index.js:
-      API_BASE = VITE_API_BASE_URL   (ex: https://api.onrender.com)
-      API_URL  = API_BASE + "/api"   (usado pelo Axios)
+      API_BASE = VITE_API_BASE_URL   (ex: https://cardapio-digital-api.onrender.com)
+      API_URL  = API_BASE + "/api"   (usado pelo Axios como baseURL)
 
-  Em desenvolvimento, o valor padrão é http://localhost:3001.
-  Em produção, defina VITE_API_BASE_URL na Vercel.
+  Em desenvolvimento: valor padrão é http://localhost:3001
+  Em produção: definido via VITE_API_BASE_URL na Vercel (ou em .env.production)
+
+  Regra de exibição de imagens:
+    imagemUrl no banco pode ser absoluta (Supabase) ou relativa (uploads locais).
+    Sempre verificar antes de prefixar:
+      src = url.startsWith('http') ? url : `${API_BASE}${url}`
 
 ### Estado global
 
-  AuthContext   →  usuário logado, token JWT no localStorage
-  ThemeContext  →  tema (light/dark), glass effect, imagem de fundo
-  useCarrinhoStore (Zustand) →  itens do carrinho, total, quantidade
-  usePedidoStore   (Zustand) →  pedido atual em andamento
+  AuthContext      →  usuário logado, token JWT no localStorage, interceptor Axios
+  ThemeContext     →  tema (light/dark), glass effect, imagem de fundo
+  useCarrinhoStore →  itens, adicionarItem, removerItem, limparCarrinho, totais
+  usePedidoStore   →  pedido atual em andamento
 
 ### Comunicação com o backend
 
@@ -147,8 +165,8 @@ Fluxo principal:
 
 ## 4. SERVER — BACKEND
 
-  Tecnologias:  Node.js 20, Express 5, Prisma 5, Socket.io 4,
-                JWT, bcryptjs, Multer, Supabase JS, Zod, QRCode
+  Tecnologias:  Node.js ≥20, Express 5, Prisma 5, Socket.io 4,
+                JWT, bcryptjs, Multer (memoryStorage), Supabase JS, Zod 4, QRCode
 
   Porta local:  http://localhost:3001
 
@@ -157,15 +175,15 @@ Fluxo principal:
   Prefixo base: /api
 
   /api/auth
-    POST  /login                → Autenticação (retorna JWT)
+    POST  /login                → Autenticação (retorna JWT com expiração 7 dias)
     POST  /register             → Cadastro de usuário
     GET   /me                   → Dados do usuário logado
 
   /api/menu (público)
-    GET   /                     → Cardápio completo com categorias e itens
+    GET   /                     → Cardápio completo com categorias e itens disponíveis
 
   /api/admin (requer ADMIN)
-    GET   /menu                 → Listar itens
+    GET   /menu                 → Listar itens (admin)
     GET   /menu/categorias      → Listar categorias
     POST  /menu                 → Criar item
     PUT   /menu/:id             → Atualizar item
@@ -181,14 +199,14 @@ Fluxo principal:
 
   /api/pedidos (requer login)
     POST  /                     → Criar pedido
-    GET   /historico            → Histórico com filtros (admin)
+    GET   /historico            → Histórico com filtros (mesa, status, datas, página)
     PATCH /:id/status           → Atualizar status (admin)
 
   /api/pagamentos (requer login)
-    POST  /                     → Criar pagamento (gera QR Pix se PIX)
+    POST  /                     → Criar pagamento (gera QR Pix EMV se método=PIX)
     GET   /pedido/:pedidoId     → Buscar pagamento do pedido
     GET   /pendentes            → Listar pendentes (admin)
-    PATCH /:id/confirmar        → Confirmar pagamento (admin)
+    PATCH /:id/confirmar        → Confirmar pagamento manualmente (admin)
 
   /api/mesas
     GET   /ativas               → Mesas ativas (público)
@@ -199,33 +217,33 @@ Fluxo principal:
 
   /api/configuracoes
     GET   /                     → Configurações de tema (público)
-    POST  /                     → Salvar configurações (admin)
+    POST  /                     → Salvar configurações de tema (admin)
     POST  /fundo                → Upload imagem de fundo (→ Supabase Storage)
     DELETE /fundo               → Remover imagem de fundo
 
   /api/upload (requer ADMIN)
     POST  /planta               → Upload da planta do restaurante (→ Supabase Storage)
-    GET   /planta/info          → URL da planta atual
+    GET   /planta/info          → URL atual da planta (lida da tabela Configuracao)
 
   /api/shows
     GET   /proximos             → Shows futuros com artista (público)
-    GET   /passados             → Shows passados com avaliações (admin)
-    GET   /:id                  → Show completo (admin)
-    GET   /:id/metricas         → Relatório pós-show (admin)
+    GET   /passados             → Shows passados com contagem de avaliações (admin)
+    GET   /:id                  → Show completo com avaliações (admin)
+    GET   /:id/metricas         → Relatório pós-show: notas + pedidos vs média 7d (admin)
     POST  /                     → Criar show (admin)
     PUT   /:id                  → Atualizar show (admin)
     DELETE /:id                 → Excluir show (admin)
-    POST  /:id/avaliar          → Avaliar show (cliente)
-    GET   /:id/minha-avaliacao  → Verificar avaliação do usuário (cliente)
+    POST  /:id/avaliar          → Avaliar show — upsert (cliente logado)
+    GET   /:id/minha-avaliacao  → Verificar se usuário já avaliou (cliente logado)
 
   /api/artistas
     GET   /ativos               → Artistas ativos (público)
-    GET   /                     → Todos os artistas (admin)
-    GET   /:id                  → Artista com shows (admin)
+    GET   /                     → Todos os artistas com contagem de shows (admin)
+    GET   /:id                  → Artista com últimos 10 shows (admin)
     POST  /                     → Criar artista (admin)
-    PUT   /:id                  → Atualizar artista (admin)
-    DELETE /:id                 → Excluir artista (admin)
-    PUT   /:id/imagem           → Upload imagem (→ Supabase Storage)
+    PUT   /:id                  → Atualizar dados do artista (admin)
+    DELETE /:id                 → Excluir artista e imagem (admin)
+    PUT   /:id/imagem           → Upload de imagem via Multer (→ Supabase Storage)
     PATCH /:id/imagem-url       → Salvar URL externa de imagem
     DELETE /:id/imagem          → Remover imagem
 
@@ -234,8 +252,8 @@ Fluxo principal:
     GET   /                     → Listar inscritos (admin)
     DELETE /:id                 → Remover inscrito (admin)
 
-  /api/preferencias (admin)
-    GET, POST, PUT, DELETE para perguntas e opções
+  /api/preferencias (admin e cliente logado)
+    GET/POST/PUT/DELETE         → Perguntas, opções e respostas de preferências
 
   /api/cliente (requer login)
     GET   /historico            → Pedidos do usuário logado
@@ -245,16 +263,20 @@ Fluxo principal:
   Todas as rotas protegidas exigem o header:
     Authorization: Bearer <token_jwt>
 
-  O token é gerado no login e armazenado no localStorage do browser.
-  Expiração: 7 dias.
+  O token é gerado no login (expiração 7 dias) e armazenado no localStorage.
   O AuthContext injeta o token automaticamente em toda requisição Axios.
+  Roles: USER (cliente padrão), ADMIN (acesso total ao dashboard).
 
 ### Tempo real (Socket.io)
+
+  Salas:
+    cozinha          → admin/cozinheiro
+    mesa_{numero}    → cliente daquela mesa específica
 
   Eventos emitidos pelo servidor:
     pedido_novo        → sala "cozinha"     (quando pedido é criado)
     pedido_atualizado  → sala "cozinha"     (quando status muda)
-    status_atualizado  → sala "mesa_{num}"  (quando admin muda status)
+    status_atualizado  → sala "mesa_{num}"  (payload: { pedidoId, status })
 
   O cliente entra na sala emitindo:
     "entrar_mesa"    com o número da mesa
@@ -266,15 +288,22 @@ Fluxo principal:
   do Banco Central do Brasil (com CRC16 validado).
 
   Configuração via variáveis de ambiente:
-    PIX_CHAVE  → sua chave Pix (CPF, CNPJ, e-mail, telefone ou aleatória)
-    PIX_NOME   → nome do recebedor (máx. 25 chars)
-    PIX_CIDADE → cidade do recebedor (máx. 15 chars)
+    PIX_CHAVE  → chave Pix (CPF, CNPJ, e-mail, telefone ou aleatória)
+    PIX_NOME   → nome do recebedor (máx. 25 chars, sem acentos)
+    PIX_CIDADE → cidade do recebedor (máx. 15 chars, sem acentos)
 
   Fluxo:
     1. Cliente escolhe Pix no checkout
-    2. Backend gera payload EMV + QR Code base64
-    3. Cliente escaneia o QR no app do banco
-    4. Admin confirma manualmente em /dashboard/pagamentos
+    2. Backend gera payload EMV + QR Code base64 + string "copia e cola"
+    3. Ambos são salvos no banco (Pagamento.qrCode e Pagamento.pixCopiaECola)
+    4. Cliente escaneia o QR no app do banco
+    5. Admin confirma manualmente em /dashboard/pagamentos
+
+### CORS e Socket.io
+
+  As origens permitidas são configuradas dinamicamente via variável FRONTEND_URL:
+    - Sempre incluem http://localhost:5173 e http://localhost:4173
+    - Em produção, inclui o valor de FRONTEND_URL (URL da Vercel)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -286,41 +315,66 @@ Fluxo principal:
 
 ### Modelos
 
-  User           → Usuários (cliente e admin). Campos: nome, email, senha, role
-  MenuCategoria  → Categorias do cardápio (Entradas, Pratos, Bebidas...)
-  MenuItem       → Itens do cardápio com preço, descrição e imagem
-  Pedido         → Pedido por mesa com status e total
-  PedidoItem     → Itens de um pedido (quantidade, observação, subtotal)
-  Pagamento      → Dados do pagamento (método, status, QR Code Pix)
-  Mesa           → Mesas do restaurante com posição no mapa e cor
-  Configuracao   → Configurações de tema em chave=valor (banco de dados)
+  User              → Usuários (cliente e admin)
+                      campos: nome, email, senha (bcrypt), role: USER|ADMIN
+
+  MenuCategoria     → Categorias do cardápio (Entradas, Pratos, Bebidas...)
+                      campos: nome, ordem
+
+  MenuItem          → Itens do cardápio
+                      campos: nome, descricao, preco, disponivel, categoriaId, imagemUrl
+                      imagemUrl: URL absoluta do Supabase Storage (https://...)
+
+  Pedido            → Pedido por mesa
+                      campos: mesa, mesaId, status, total, userId
+
+  PedidoItem        → Itens de um pedido
+                      campos: pedidoId, menuItemId, quantidade, observacao, subtotal
+
+  Pagamento         → Dados do pagamento
+                      campos: pedidoId, tipo, metodo, status, qrCode, pixCopiaECola
+
+  Mesa              → Mesas do restaurante
+                      campos: numero, ativa, lugares, posX, posY, cor
+
+  Configuracao      → Configurações em chave=valor
+                      uso: tema (prefixos light_/dark_) e planta_url
+
   PerguntaPreferencia → Perguntas de perfil do público
   OpcaoPreferencia    → Opções de cada pergunta
-  RespostaPreferencia → Respostas dos clientes
-  Newsletter     → E-mails inscritos
-  Artista        → Artistas com bio, gênero, redes sociais e imagem
-  Show           → Shows com data, horário, artista e gênero
-  AvaliacaoShow  → Avaliações (nota 1-5 + comentário) por show e usuário
+  RespostaPreferencia → Respostas dos clientes (@@unique[userId, perguntaId])
+
+  Newsletter        → E-mails inscritos
+
+  Artista           → Artistas com bio, gênero, redes sociais e imagem
+                      campos: nome, bio, genero, imagemUrl, instagram, spotify,
+                              youtube, tiktok, site, ativo
+
+  Show              → Shows com data, horário, artista e gênero
+                      campos: titulo, descricao, data, horario, genero, imagemUrl,
+                              ativo, artistaId
+
+  AvaliacaoShow     → Avaliações por show e usuário (@@unique[showId, userId])
+                      campos: nota (1-5), comentario
 
 ### Status de pedido
 
   NOVO → PREPARANDO → PRONTO → ENTREGUE
          (ou CANCELADO em qualquer etapa)
 
-### Migrations aplicadas
+### Métodos de pagamento
 
-  init
-  add_users
-  add_mesas
-  add_mesa_posicao_lugares
-  add_configuracao
-  add_preferencias
-  add_newsletter
-  add_imagem_menu_item
-  add_mesa_cor
-  add_pix_pagamento
-  add_shows
-  add_artistas_avaliacoes
+  Tipo GARCOM (presencial): DINHEIRO | CARTAO
+  Tipo ONLINE:              PIX (QR Code gerado automaticamente)
+
+### Migrations
+
+  Apenas 2 arquivos de migration presentes:
+    20260425170240_init               → schema completo inicial
+    20260425172934_add_artistas_avaliacoes → Artista, AvaliacaoShow, User.avaliacoes
+
+  Nota: outros incrementos históricos foram aplicados via npx prisma db push
+  ou SQL direto e não possuem arquivo de migration separado.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -329,19 +383,28 @@ Fluxo principal:
   Provedor: Supabase Storage
   Bucket:   uploads (público)
 
-  Todos os uploads de imagem são salvos no Supabase Storage.
-  As URLs geradas são absolutas (https://xxx.supabase.co/...) e ficam
-  salvas diretamente no banco de dados.
+  Todos os uploads de imagem são processados por:
+    server/src/services/storage.service.js
+      uploadFile(buffer, filename, mimetype)  → retorna URL pública absoluta
+      deleteFile(urlOrPath)                   → remove do bucket
 
-  Tipos de imagem:
+  O Multer é configurado com memoryStorage — arquivos ficam em RAM como Buffer
+  e são enviados ao Supabase imediatamente, sem tocar o disco.
+
+  Convenção de nomes de arquivo no bucket:
     item_{id}.{ext}      → Foto de prato do cardápio
     artista_{id}.{ext}   → Foto de artista
-    planta.{ext}         → Planta/mapa do restaurante
     fundo.{ext}          → Imagem de fundo do tema glass
+    planta.{ext}         → Planta/mapa do restaurante
+                           (URL salva em Configuracao com chave "planta_url")
 
-  Em desenvolvimento local (sem Supabase configurado), os uploads
-  continuam funcionando via sistema de arquivos em server/uploads/.
-  Para usar Supabase Storage, defina SUPABASE_URL e SUPABASE_SERVICE_KEY.
+  Em desenvolvimento local (sem Supabase configurado):
+    Os uploads continuam funcionando via disco em server/uploads/.
+    Para usar Supabase Storage, defina SUPABASE_URL e SUPABASE_SERVICE_KEY.
+
+  Importante: as URLs retornadas pelo Supabase são absolutas (https://...).
+    Ao exibir imagens no frontend, sempre verificar antes de prefixar API_BASE:
+      src={url.startsWith('http') ? url : `${API_BASE}${url}`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -349,22 +412,31 @@ Fluxo principal:
 
 ### server/.env
 
-  DATABASE_URL        String de conexão PostgreSQL do Supabase (pooler porta 6543)
-  JWT_SECRET          Chave secreta para assinar tokens JWT (mínimo 32 chars)
-  PORT                Porta do servidor (padrão: 3001)
-  NODE_ENV            "development" ou "production"
-  FRONTEND_URL        URL do frontend em produção (para CORS e Socket.io)
-  SUPABASE_URL        URL do projeto Supabase (https://xxx.supabase.co)
-  SUPABASE_SERVICE_KEY Chave service_role do Supabase (para Storage)
-  PIX_CHAVE           Chave Pix do restaurante
-  PIX_NOME            Nome do recebedor Pix (máx. 25 chars)
-  PIX_CIDADE          Cidade do recebedor Pix (máx. 15 chars)
+  DATABASE_URL         String de conexão PostgreSQL via Supabase Pooler (porta 6543)
+                         Formato: postgresql://postgres.[REF]:[SENHA]@aws-...:6543/postgres
+  JWT_SECRET           Chave secreta para assinar tokens JWT (mínimo 32 chars hex)
+  PORT                 Porta do servidor (padrão: 3001)
+  NODE_ENV             "development" ou "production"
+  FRONTEND_URL         URL do frontend em produção (para CORS e Socket.io)
+  SUPABASE_URL         URL do projeto Supabase (https://xxx.supabase.co)
+  SUPABASE_SERVICE_KEY Chave service_role do Supabase (acesso ao Storage)
+                         NUNCA expor no frontend — acesso total ao projeto
+  PIX_CHAVE            Chave Pix do restaurante
+  PIX_NOME             Nome do recebedor Pix (máx. 25 chars, sem acentos)
+  PIX_CIDADE           Cidade do recebedor Pix (máx. 15 chars, sem acentos)
 
-### client/.env
+### client/.env (desenvolvimento)
 
-  VITE_API_BASE_URL   URL base do backend SEM /api e SEM barra final
-                      Desenvolvimento: http://localhost:3001
-                      Produção:        https://seu-app.onrender.com
+  VITE_API_BASE_URL    URL base do backend SEM /api e SEM barra final
+                         Desenvolvimento: http://localhost:3001
+
+### client/.env.production (commitado no repositório)
+
+  VITE_API_BASE_URL    https://cardapio-digital-api-my6t.onrender.com
+
+  Este arquivo é commitado porque o Vercel executa o build a partir do repositório
+  e precisa do valor em tempo de build (variável VITE_ é injetada pelo Vite no bundle).
+  A variável também pode ser sobrescrita nas configurações da Vercel.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -376,7 +448,7 @@ Fluxo principal:
 
   # Iniciar em desenvolvimento
   cd client && npm run dev        → http://localhost:5173
-  cd server && npm run dev        → http://localhost:3001
+  cd server && npm run dev        → http://localhost:3001 (nodemon)
 
   # Build do frontend (verificar erros antes de publicar)
   cd client && npm run build
@@ -384,14 +456,12 @@ Fluxo principal:
   # Banco de dados
   cd server && npx prisma migrate dev --name nome_da_migration
   cd server && npx prisma generate
-  cd server && npx prisma studio      → Interface visual do banco
+  cd server && npx prisma studio      → Interface visual do banco (porta 5555)
   cd server && npx prisma db push     → Sync direto sem migration (cuidado!)
 
-  # Criar admin inicial
-  cd server && node criar-admin.js
-
-  # Criar mesas iniciais
-  cd server && node criar-mesas.js
+  # Setup inicial
+  cd server && node criar-admin.js    → Cria usuário admin padrão
+  cd server && node criar-mesas.js    → Cria conjunto inicial de mesas
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -402,53 +472,46 @@ Fluxo principal:
     Backend                   →  Render    (gratuito, dorme após 15min inativo)
     Frontend                  →  Vercel    (gratuito)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 1 — Configurar Supabase
 
-  1.1  Acesse https://supabase.com e faça login no seu projeto existente.
-       (O banco de dados já está configurado via DATABASE_URL.)
+  1.1  Acesse https://supabase.com e faça login no seu projeto.
+       (O banco já está configurado via DATABASE_URL.)
 
   1.2  Criar o bucket de imagens:
        - No menu lateral, clique em "Storage"
        - Clique em "New bucket"
        - Nome: uploads
-       - Marque a opção "Public bucket"
+       - Marque "Public bucket"
        - Clique em "Save"
 
-  1.3  Copiar as credenciais necessárias:
+  1.3  Copiar as credenciais:
        - Vá em "Project Settings" → "API"
        - Copie o "Project URL" (formato: https://xxxx.supabase.co)
-       - Copie a chave "service_role" (fica abaixo da anon key, é a mais longa)
-       IMPORTANTE: a service_role key tem acesso total ao projeto.
-                   Nunca exponha ela no frontend.
+       - Copie a chave "service_role" (abaixo da anon key, é a mais longa)
+       ATENÇÃO: service_role tem acesso total. Nunca exponha no frontend.
 
-  1.4  Gerar um novo JWT_SECRET:
-       Abra um terminal e rode:
-         node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-       Guarde o valor gerado — ele será usado no Render.
+  1.4  Gerar JWT_SECRET:
+       node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+       Guarde o valor gerado para usar no Render.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 2 — Preparar o repositório no GitHub
 
-  2.1  Certifique-se de estar na pasta raiz do projeto:
+  2.1  Certifique-se de estar na pasta raiz:
          cd cardapio-digital
 
-  2.2  Verifique se o .env NÃO está sendo commitado:
-         cat .gitignore   (deve conter ".env" e ".env.*")
+  2.2  Verifique se .env NÃO está sendo commitado:
+         git status   (não deve aparecer nenhum .env ou .env.local)
 
-  2.3  Faça o commit de todos os arquivos:
+  2.3  Faça commit de todas as alterações:
          git add .
          git commit -m "deploy: preparação para produção"
+         git push origin main
 
-  2.4  Crie um repositório no GitHub (https://github.com/new)
-       e envie o código:
-         git remote add origin https://github.com/SEU_USUARIO/cardapio-digital.git
-         git branch -M main
-         git push -u origin main
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 3 — Publicar o backend no Render
 
@@ -456,51 +519,48 @@ Fluxo principal:
 
   3.2  Clique em "New +" → "Web Service"
 
-  3.3  Conecte ao repositório do GitHub criado na etapa 2.
+  3.3  Conecte ao repositório do GitHub.
 
   3.4  Configure o serviço:
-         Name:          cardapio-digital-api  (ou o nome que preferir)
-         Region:        South America (São Paulo) se disponível, senão US East
-         Branch:        main
+         Name:           cardapio-digital-api
+         Region:         South America (São Paulo) ou US East
+         Branch:         main
          Root Directory: server
          Runtime:        Node
-         Build Command:  npm ci && npx prisma generate && npx prisma migrate deploy
+         Build Command:  npm ci && npx prisma generate
          Start Command:  npm start
          Plan:           Free
 
-  3.5  Adicione as variáveis de ambiente (seção "Environment Variables"):
+  3.5  Adicione as variáveis de ambiente:
 
-         DATABASE_URL        →  string do Supabase (pooler, porta 6543)
-                                 Formato: postgresql://postgres.[REF]:[SENHA]@aws-...:6543/postgres?pgbouncer=true&connection_limit=1
-         JWT_SECRET          →  valor gerado no passo 1.4
-         NODE_ENV            →  production
-         PORT                →  3001
-         FRONTEND_URL        →  (deixar vazio por enquanto — preencher após deploy da Vercel)
-         SUPABASE_URL        →  https://xxxx.supabase.co  (do passo 1.3)
-         SUPABASE_SERVICE_KEY →  service_role key  (do passo 1.3)
-         PIX_CHAVE           →  sua chave Pix
-         PIX_NOME            →  Nome Do Restaurante  (máx. 25 chars, sem acentos)
-         PIX_CIDADE          →  SAO PAULO  (máx. 15 chars, sem acentos)
+         DATABASE_URL         → string do Supabase Pooler (porta 6543)
+                                Formato: postgresql://postgres.[REF]:[SENHA]@aws-...:6543/postgres
+         JWT_SECRET           → valor gerado no passo 1.4
+         NODE_ENV             → production
+         PORT                 → 3001
+         FRONTEND_URL         → (deixar vazio por enquanto — preencher após deploy Vercel)
+         SUPABASE_URL         → https://xxxx.supabase.co
+         SUPABASE_SERVICE_KEY → service_role key
+         PIX_CHAVE            → sua chave Pix
+         PIX_NOME             → Nome Do Restaurante  (sem acentos, máx. 25 chars)
+         PIX_CIDADE           → SAO PAULO  (sem acentos, máx. 15 chars)
 
-  3.6  Clique em "Create Web Service" e aguarde o build terminar.
-       O primeiro build demora de 3 a 8 minutos.
+  3.6  Clique em "Create Web Service" e aguarde o build (3–8 minutos).
 
-  3.7  Quando o deploy concluir, anote a URL gerada.
-       Exemplo: https://cardapio-digital-api.onrender.com
+  3.7  Anote a URL gerada. Exemplo:
+         https://cardapio-digital-api-my6t.onrender.com
 
-  3.8  Teste se o backend está funcionando acessando no navegador:
-         https://cardapio-digital-api.onrender.com/api/menu
-       Deve retornar um JSON (array vazio ou com itens se o banco já tiver dados).
+  3.8  Teste acessando no navegador:
+         https://cardapio-digital-api-my6t.onrender.com/api/menu
+       Deve retornar JSON (array vazio ou com itens).
 
-  3.9  Criar o primeiro usuário admin via Shell do Render:
-       - Na dashboard do Render, clique no serviço → "Shell"
-       - Digite: node criar-admin.js
-       - Isso criará o admin padrão (credenciais em criar-admin.js)
+  3.9  Criar o banco (se necessário):
+       - No Render → seu serviço → "Shell"
+       - npx prisma db push
+       - node criar-admin.js
+       - node criar-mesas.js   (opcional)
 
-  3.10 (Opcional) Criar mesas iniciais:
-       - Na Shell do Render: node criar-mesas.js
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 4 — Publicar o frontend na Vercel
 
@@ -508,58 +568,59 @@ Fluxo principal:
 
   4.2  Clique em "Add New..." → "Project"
 
-  4.3  Importe o repositório do GitHub criado na etapa 2.
+  4.3  Importe o repositório do GitHub.
 
   4.4  Configure o projeto:
          Framework Preset:  Vite  (detectado automaticamente)
          Root Directory:    client
-         Build Command:     npm run build  (já configurado)
-         Output Directory:  dist  (já configurado)
+         Build Command:     npm run build
+         Output Directory:  dist
 
   4.5  Adicione a variável de ambiente:
-         VITE_API_BASE_URL  →  https://cardapio-digital-api.onrender.com
+         VITE_API_BASE_URL  →  https://cardapio-digital-api-my6t.onrender.com
                                (URL do Render da etapa 3.7, SEM /api no final)
 
-  4.6  Clique em "Deploy" e aguarde o build terminar (1 a 3 minutos).
+       Nota: o arquivo client/.env.production já está commitado com esse valor.
+       A variável na Vercel sobrescreve o .env.production se necessário.
 
-  4.7  Quando concluir, anote a URL gerada.
-       Exemplo: https://cardapio-digital.vercel.app
+  4.6  Clique em "Deploy" e aguarde o build (1–3 minutos).
 
-  4.8  Teste acessando a URL — a landing page deve aparecer.
-       Tente fazer login com as credenciais do admin.
+  4.7  Anote a URL gerada. Exemplo:
+         https://cardapio-digital.vercel.app
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  4.8  Acesse a URL — a landing page deve aparecer.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 5 — Conectar Vercel ↔ Render (CORS e Socket.io)
 
   5.1  Volte ao Render → seu serviço → "Environment"
 
-  5.2  Adicione (ou atualize) a variável:
+  5.2  Adicione (ou atualize):
          FRONTEND_URL  →  https://cardapio-digital.vercel.app
                           (URL exata da Vercel, SEM barra no final)
 
-  5.3  Clique em "Save Changes" — o Render fará um redeploy automático.
+  5.3  Clique em "Save Changes" — o Render fará redeploy automático.
 
-  5.4  Aguarde o redeploy terminar e teste o sistema completo:
-       - Abra a URL da Vercel
+  5.4  Teste o sistema completo:
        - Faça login como admin
-       - Acesse o dashboard
-       - Verifique se os dados carregam
-       - Teste a tela da cozinha (tempo real)
+       - Acesse o dashboard e verifique dados
+       - Abra a cozinha em outra aba e faça um pedido de teste
+       - Verifique se o pedido aparece em tempo real (Socket.io)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 6 — Verificações finais
 
-  [ ] Landing page carrega sem erros
-  [ ] Login de cliente funciona
-  [ ] Login de admin funciona
+  [ ] Landing page carrega sem erros de console
+  [ ] Login de cliente e admin funcionam
   [ ] Dashboard carrega dados do banco
   [ ] Cardápio aparece na área do cliente
   [ ] É possível fazer um pedido de teste
   [ ] Cozinha recebe o pedido em tempo real (Socket.io)
   [ ] Upload de imagem de prato funciona (vai para Supabase Storage)
-  [ ] Menu TV (https://seu-app.vercel.app/menu-tv) exibe o cardápio
+  [ ] Imagem aparece corretamente no CardapioAdmin e no MenuTV
+  [ ] Menu TV (/menu-tv) exibe o cardápio
   [ ] Configurações de tema salvam e aplicam
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -570,24 +631,22 @@ Fluxo principal:
        │
        ├──► Vercel (Frontend React)
        │         │
-       │         └──► Render (Backend Express)  ─── JWT Auth ───► Banco
-       │                    │                                      Supabase
-       │                    │                                      PostgreSQL
-       │                    └──► Supabase Storage (imagens)
+       │         └──► Render (Backend Express + Socket.io)
+       │                    │
+       │                    ├──► Supabase PostgreSQL  (dados)
+       │                    └──► Supabase Storage     (imagens)
        │
-       └──► Socket.io (WebSocket para tempo real)
-                 │
-                 └──► Render (mesmo servidor Express/Socket.io)
+       └──► Socket.io WebSocket (mesmo servidor Render)
 
   Variáveis que conectam os serviços:
 
-    Vercel                          Render
-    ──────────────────              ──────────────────────────────────
-    VITE_API_BASE_URL  ──────────►  (URL do Render — define onde chamar)
-                                    FRONTEND_URL  ◄──────  (URL da Vercel — define o CORS)
-                                    DATABASE_URL  ──────►  Supabase PostgreSQL
-                                    SUPABASE_URL  ──────►  Supabase Storage
-                                    SUPABASE_SERVICE_KEY ► Supabase Storage
+    Vercel                             Render
+    ─────────────────────              ──────────────────────────────────
+    VITE_API_BASE_URL ────────────►   (URL do Render — onde chamar a API)
+                                       FRONTEND_URL ◄──── (URL da Vercel — CORS)
+                                       DATABASE_URL ─────► Supabase PostgreSQL
+                                       SUPABASE_URL ─────► Supabase Storage
+                                       SUPABASE_SERVICE_KEY ► Supabase Storage
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -595,13 +654,13 @@ Fluxo principal:
 
   DESENVOLVIMENTO LOCAL
 
-    Admin padrão:
+    Admin padrão (criado por criar-admin.js):
       E-mail:  admin@restaurante.com
       Senha:   admin123
 
-    Backend:   http://localhost:3001
-    Frontend:  http://localhost:5173
-    Prisma Studio (interface do banco):  http://localhost:5555
+    Backend:         http://localhost:3001
+    Frontend:        http://localhost:5173
+    Prisma Studio:   http://localhost:5555
       (rode: cd server && npx prisma studio)
 
   PRODUÇÃO
@@ -612,29 +671,34 @@ Fluxo principal:
     Supabase:  https://supabase.com/dashboard
     Render:    https://dashboard.render.com
     Vercel:    https://vercel.com/dashboard
+    GitHub:    https://github.com/singlefutureadm-agency/cardapio-digital
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## OBSERVAÇÕES IMPORTANTES
 
   1. O plano gratuito do Render desliga o servidor após 15 minutos sem uso.
-     A primeira requisição após esse período pode demorar 30-60 segundos.
-     Para evitar isso, considere o plano Starter ($7/mês) ou use um serviço
-     de ping (ex: UptimeRobot) para manter o servidor ativo.
+     A primeira requisição após esse período pode demorar 30–60 segundos.
+     Para evitar isso, use o plano Starter ($7/mês) ou configure um serviço
+     de ping como UptimeRobot para manter o servidor ativo.
 
   2. O plano gratuito do Supabase tem limite de 500MB de banco e 1GB de Storage.
-     Para um restaurante real em produção, monitore o uso.
+     Para um restaurante real em produção, monitore o uso regularmente.
 
-  3. Nunca commite os arquivos .env no repositório.
-     Eles estão listados no .gitignore mas verifique antes de cada push:
-       git status    (não deve aparecer nenhum .env)
+  3. Nunca commite arquivos .env no repositório.
+     O arquivo .env.production é commitado intencionalmente (apenas VITE_ vars,
+     sem secrets). Todos os outros .env estão no .gitignore.
 
-  4. A confirmation de pagamento Pix é manual — o admin precisa confirmar
+  4. A confirmação de pagamento Pix é manual — o admin precisa confirmar
      cada pagamento em /dashboard/pagamentos. Para confirmação automática,
-     será necessário integrar um webhook de um provedor (Mercado Pago, etc.).
+     é necessário integrar um webhook de um provedor (Mercado Pago, Stripe etc.).
 
   5. Se a migration falhar no Render, acesse a Shell e rode:
        npx prisma db push
      Isso sincroniza o schema sem depender do histórico de migrations.
+
+  6. O Supabase Storage retorna URLs absolutas (https://xxx.supabase.co/...).
+     Sempre verifique url.startsWith('http') antes de prefixar API_BASE
+     ao exibir imagens no frontend.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
