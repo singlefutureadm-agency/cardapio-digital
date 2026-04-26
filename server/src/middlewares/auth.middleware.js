@@ -16,10 +16,17 @@ const authMiddleware = (req, res, next) => {
 }
 
 const isAdmin = (req, res, next) => {
-  if (req.user?.role !== 'ADMIN') {
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'ADMINSF') {
     return res.status(403).json({ error: 'Acesso restrito a administradores' })
   }
   next()
 }
 
-module.exports = { authMiddleware, isAdmin }
+const isAdminSF = (req, res, next) => {
+  if (req.user?.role !== 'ADMINSF') {
+    return res.status(403).json({ error: 'Acesso restrito ao administrador SF' })
+  }
+  next()
+}
+
+module.exports = { authMiddleware, isAdmin, isAdminSF }

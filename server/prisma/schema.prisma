@@ -166,6 +166,7 @@ enum StatusPagamento {
 enum Role {
   USER
   ADMIN
+  ADMINSF
 }
 
 model Artista {

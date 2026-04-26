@@ -4,42 +4,61 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
 
-const NAV = [
-  { to: '/dashboard', label: 'Visão geral', icon: '📊', end: true },
+function buildNav(role, features) {
+  const isSF = role === 'ADMINSF'
 
-  {
-    label: 'Restaurante', icon: '🍽️', grupo: true,
-    filhos: [
-      { to: '/dashboard/cozinha',   label: 'Cozinha',   icon: '👨‍🍳' },
-      { to: '/dashboard/cardapio',  label: 'Cardápio',  icon: '📋' },
-      { to: '/dashboard/mesas',     label: 'Mesas',     icon: '🪑' },
-      { to: '/dashboard/menu-tv',   label: 'Menu TV',   icon: '📺' },
-      { to: '/dashboard/historico', label: 'Histórico', icon: '🗂️' },
-    ]
-  },
+  const restauranteFilhos = [
+    { to: '/dashboard/cozinha',   label: 'Cozinha',   icon: '👨‍🍳' },
+    { to: '/dashboard/cardapio',  label: 'Cardápio',  icon: '📋' },
+    ...(isSF || features.mesas   ? [{ to: '/dashboard/mesas',   label: 'Mesas',   icon: '🪑' }] : []),
+    ...(isSF || features.menutv  ? [{ to: '/dashboard/menu-tv', label: 'Menu TV', icon: '📺' }] : []),
+    { to: '/dashboard/historico', label: 'Histórico', icon: '🗂️' },
+  ]
 
-  {
-    label: 'Shows', icon: '🎸', grupo: true,
-    filhos: [
-      { to: '/dashboard/shows',    label: 'Calendário', icon: '📅' },
-      { to: '/dashboard/artistas', label: 'Artistas',   icon: '🎤' },
-    ]
-  },
+  const nav = [
+    { to: '/dashboard', label: 'Visão geral', icon: '📊', end: true },
+    { label: 'Restaurante', icon: '🍽️', grupo: true, filhos: restauranteFilhos },
+  ]
 
-  { to: '/dashboard/usuarios',   label: 'Usuários',   icon: '👥' },
-  { to: '/dashboard/newsletter', label: 'Newsletter', icon: '✉️' },
+  if (isSF || features.shows) {
+    nav.push({
+      label: 'Shows', icon: '🎸', grupo: true,
+      filhos: [
+        { to: '/dashboard/shows',    label: 'Calendário', icon: '📅' },
+        { to: '/dashboard/artistas', label: 'Artistas',   icon: '🎤' },
+      ],
+    })
+  }
 
-  {
-    label: 'Preferências', icon: '🎯', grupo: true,
-    filhos: [
-      { to: '/dashboard/preferencias',           label: 'Gerenciar', icon: '⚙️' },
-      { to: '/dashboard/preferencias/analytics', label: 'Analytics', icon: '📈' },
-    ]
-  },
+  nav.push({ to: '/dashboard/usuarios',   label: 'Usuários',   icon: '👥' })
+  nav.push({ to: '/dashboard/newsletter', label: 'Newsletter', icon: '✉️' })
 
-  { to: '/dashboard/configuracoes', label: 'Configurações', icon: '⚙️' },
-  { to: '/dashboard/pagamentos',    label: 'Pagamentos',    icon: '💳' },
-]
+  if (isSF || features.preferencias) {
+    nav.push({
+      label: 'Preferências', icon: '🎯', grupo: true,
+      filhos: [
+        { to: '/dashboard/preferencias',           label: 'Gerenciar', icon: '⚙️' },
+        { to: '/dashboard/preferencias/analytics', label: 'Analytics', icon: '📈' },
+      ],
+    })
+  }
+
+  if (isSF) {
+    nav.push({
+      label: 'Configurações', icon: '⚙️', grupo: true,
+      filhos: [
+        { to: '/dashboard/configuracoes',   label: 'Tema',            icon: '🎨' },
+        { to: '/dashboard/funcionalidades', label: 'Funcionalidades', icon: '🔧' },
+      ],
+    })
+  } else {
+    nav.push({ to: '/dashboard/configuracoes', label: 'Configurações', icon: '⚙️' })
+  }
+
+  nav.push({ to: '/dashboard/pagamentos', label: 'Pagamentos', icon: '💳' })
+
+  return nav
+}
 
 function GrupoNav({ item, collapsed, glass }) {
   const location = useLocation()
@@ -147,9 +166,11 @@ function GrupoNav({ item, collapsed, glass }) {
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth()
-  const { isDark, glass, bgUrl } = useTheme()
+  const { isDark, glass, bgUrl, features } = useTheme()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+
+  const NAV = buildNav(user?.role, features)
 
   const sidebarStyle = glass ? {
     background: 'var(--glass-bg)',
@@ -236,7 +257,12 @@ export default function DashboardLayout() {
         <div className="px-2 py-3" style={{ borderTop: '1px solid var(--border)' }}>
           {!collapsed && (
             <div className="px-3 py-2 mb-1 rounded-xl" style={{ background: 'var(--brand-light)' }}>
-              <p className="text-xs font-semibold truncate" style={{ color: 'var(--brand)' }}>{user?.nome}</p>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-xs font-semibold truncate" style={{ color: 'var(--brand)' }}>{user?.nome}</p>
+                {user?.role === 'ADMINSF' && (
+                  <span style={{ fontSize: '0.6rem', background: 'var(--brand)', color: '#fff', borderRadius: 4, padding: '1px 5px', flexShrink: 0, fontWeight: 700 }}>SF</span>
+                )}
+              </div>
               <p className="text-xs truncate" style={{ color: 'var(--text-hint)' }}>{user?.email}</p>
             </div>
           )}

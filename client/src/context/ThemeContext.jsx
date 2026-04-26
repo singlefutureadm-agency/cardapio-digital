@@ -202,6 +202,13 @@ export function ThemeProvider({ children }) {
     aplicarGlass(ativo, { ...config, ...glassConfig })
   }
 
+  const features = {
+    shows:        config.feature_shows        !== '0',
+    menutv:       config.feature_menutv       !== '0',
+    preferencias: config.feature_preferencias !== '0',
+    mesas:        config.feature_mesas        !== '0',
+  }
+
   return (
     <ThemeContext.Provider value={{
       theme,
@@ -213,8 +220,9 @@ export function ThemeProvider({ children }) {
       previewCor,
       previewGlass,
       carregando,
-      glass:  config.glass_enabled === 'true',
-      bgUrl:  resolveBgUrl(config.glass_bg_url),
+      glass:    config.glass_enabled === 'true',
+      bgUrl:    resolveBgUrl(config.glass_bg_url),
+      features,
       DEFAULTS,
     }}>
       {children}

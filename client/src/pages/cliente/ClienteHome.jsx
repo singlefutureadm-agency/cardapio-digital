@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import gsap from 'gsap'
 import CalendarioShows from './CalendarioShows'
 
 export default function ClienteHome() {
   const { user } = useAuth()
+  const { features } = useTheme()
   const { mesa } = useParams()
   const navigate = useNavigate()
   const ref = useRef(null)
@@ -78,7 +80,7 @@ export default function ClienteHome() {
       </div>
 
       {/* Calendário de Shows */}
-      <CalendarioShows />
+      {features.shows && <CalendarioShows />}
 
     </div>
   )

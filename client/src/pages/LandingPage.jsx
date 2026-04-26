@@ -159,7 +159,7 @@ function ContatoForm() {
 export default function LandingPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const { isDark } = useTheme()
+  const { isDark, features } = useTheme()
 
   const [menu, setMenu]             = useState([])
   const [categoriaAtiva, setCat]    = useState(null)
@@ -188,8 +188,9 @@ export default function LandingPage() {
 
   /* carrega shows */
   useEffect(() => {
+    if (!features.shows) { setShows([]); return }
     api.get('/shows/proximos').then(({ data }) => setShows(data)).catch(() => {})
-  }, [])
+  }, [features.shows])
 
   /* scroll navbar */
   useEffect(() => {
