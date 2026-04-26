@@ -107,7 +107,7 @@ export default function ClienteLayout() {
       </main>
 
       {/* ── Bottom nav mobile ── */}
-      <nav className="glass-panel sticky bottom-0 z-40" style={navStyle}>
+      <nav className="glass-panel z-40" style={{ ...navStyle, position: 'sticky', bottom: 38 }}>
         <div className="max-w-2xl mx-auto flex">
           {NAV.map(({ to, label, icon, end }) => {
             const path = to(mesa)
