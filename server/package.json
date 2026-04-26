@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "npx prisma db push --accept-data-loss && node src/server.js",
+    "start": "node src/server.js",
     "build": "npx prisma generate"
   },
   "engines": {
