@@ -45,7 +45,7 @@ export default function CardapioAdmin() {
       disponivel: item.disponivel,
     })
     setEditandoId(item.id)
-    setImagemPreview(item.imagemUrl ? `${API_BASE}${item.imagemUrl}` : null) // ← corrigido
+    setImagemPreview(item.imagemUrl ? (item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`) : null)
     setImagemFile(null)
     setModal(true)
   }
@@ -160,7 +160,7 @@ export default function CardapioAdmin() {
                       {uploadandoId === item.id ? (
                         <div style={{ width: 16, height: 16, border: '2px solid var(--brand)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                       ) : item.imagemUrl ? ( // ← corrigido
-                        <img src={`${API_BASE}${item.imagemUrl}`} alt={item.nome} // ← corrigido
+                        <img src={item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`} alt={item.nome}
                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ fontSize: '1.5rem' }}>🍴</span>

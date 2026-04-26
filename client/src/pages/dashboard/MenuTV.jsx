@@ -448,7 +448,7 @@ function ItemCard({ item }) {
             {/* Imagem de fundo ocupando todo o card */}
             {temImagem ? (
                 <img
-                    src={`${API_BASE}${item.imagemUrl}`}
+                    src={item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`}
                     alt={item.nome}
                     style={{
                         position: 'absolute', inset: 0,
