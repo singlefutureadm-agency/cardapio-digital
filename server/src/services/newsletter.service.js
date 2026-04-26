@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 
 const inscrever = async (email) => {
   const existe = await prisma.newsletter.findUnique({ where: { email } })

@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const storage = require('./storage.service')
-
-const prisma = new PrismaClient()
 
 const listar = () => prisma.artista.findMany({
   orderBy: { nome: 'asc' },

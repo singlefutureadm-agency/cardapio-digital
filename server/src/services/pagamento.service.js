@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma')
 const QRCode = require('qrcode');
-
-const prisma = new PrismaClient();
 
 const PIX_CONFIG = {
   chave: process.env.PIX_CHAVE || 'restaurante@pix.com',

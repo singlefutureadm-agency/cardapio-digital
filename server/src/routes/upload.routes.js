@@ -1,12 +1,11 @@
 const { Router } = require('express')
 const multer = require('multer')
 const path = require('path')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware')
 const storage = require('../services/storage.service')
 
 const router = Router()
-const prisma = new PrismaClient()
 
 const fileFilter = (req, file, cb) => {
   const allowed = ['.png', '.jpg', '.jpeg', '.webp']

@@ -1,14 +1,13 @@
 const { Router } = require('express')
 const multer = require('multer')
 const path = require('path')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const menuCtrl = require('../controllers/menuAdmin.controller')
 const userCtrl = require('../controllers/userAdmin.controller')
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware')
 const storage = require('../services/storage.service')
 
 const router = Router()
-const prisma = new PrismaClient()
 
 const uploadItem = multer({
   storage: multer.memoryStorage(),

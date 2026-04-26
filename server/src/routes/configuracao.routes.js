@@ -1,11 +1,10 @@
 const { Router } = require('express')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware')
 const multer = require('multer')
 const path   = require('path')
 const storage = require('../services/storage.service')
 
-const prisma = new PrismaClient()
 const router = Router()
 
 const uploadFundo = multer({

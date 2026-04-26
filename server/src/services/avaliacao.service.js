@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 
 const avaliar = async ({ showId, userId, nota, comentario }) => {
   if (nota < 1 || nota > 5) throw Object.assign(new Error('Nota deve ser entre 1 e 5'), { status: 400 })

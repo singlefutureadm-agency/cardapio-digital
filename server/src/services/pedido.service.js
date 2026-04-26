@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 
 const criarPedido = async ({ mesa, itens, userId }) => {
   const menuItems = await prisma.menuItem.findMany({
