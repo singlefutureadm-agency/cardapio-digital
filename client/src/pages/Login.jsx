@@ -20,7 +20,7 @@ export default function Login() {
     setLoading(true)
     try {
       const loggedUser = await login(form.email, form.senha)
-      if (loggedUser.role === 'ADMIN') {
+      if (loggedUser.role === 'ADMIN' || loggedUser.role === 'ADMINSF') {
         navigate('/dashboard', { replace: true })
       } else {
         navigate('/selecionar-mesa', { replace: true })
