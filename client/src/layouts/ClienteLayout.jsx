@@ -103,8 +103,10 @@ export default function ClienteLayout() {
       </header>
 
       {/* ── Conteúdo ── */}
-      <main className="relative z-10 flex-1 max-w-2xl mx-auto w-full px-4 py-4">
-        <Outlet />
+      <main className="relative z-10 flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4">
+        <div className="flex-1">
+          <Outlet />
+        </div>
         <SFFooter />
       </main>
 

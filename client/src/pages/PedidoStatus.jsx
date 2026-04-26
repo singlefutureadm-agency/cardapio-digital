@@ -111,7 +111,7 @@ export default function PedidoStatus() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-5 pb-10 space-y-4">
+      <main className="flex-1 max-w-lg mx-auto w-full px-5 pt-5 pb-10 space-y-4">
 
         {/* Status principal */}
         <div className="rounded-3xl p-6 text-center"

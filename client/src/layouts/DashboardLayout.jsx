@@ -297,11 +297,13 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto" style={{ background: bgUrl ? 'transparent' : 'var(--surface)' }}>
+        <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: bgUrl ? 'transparent' : 'var(--surface)' }}>
           {bgUrl && glass && (
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'rgba(0,0,0,0.2)' }} />
           )}
-          <Outlet />
+          <div className="flex-1">
+            <Outlet />
+          </div>
           <SFFooter />
         </main>
       </div>
