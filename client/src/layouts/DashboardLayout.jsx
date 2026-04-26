@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
+import SFFooter from '../components/SFFooter'
 
 function buildNav(role, features) {
   const isSF = role === 'ADMINSF'
@@ -296,11 +297,12 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto" style={{ background: bgUrl ? 'transparent' : 'var(--surface)', paddingBottom: 38 }}>
+        <main className="flex-1 overflow-y-auto" style={{ background: bgUrl ? 'transparent' : 'var(--surface)' }}>
           {bgUrl && glass && (
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'rgba(0,0,0,0.2)' }} />
           )}
           <Outlet />
+          <SFFooter />
         </main>
       </div>
     </div>

@@ -3,7 +3,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './layouts/DashboardLayout'
 import ClienteLayout from './layouts/ClienteLayout'
 import GlobalCursor from './components/GlobalCursor'
-import SFFooter from './components/SFFooter'
 import { useAuth } from './context/AuthContext'
 import { useTheme } from './context/ThemeContext'
 
@@ -49,7 +48,6 @@ export default function App() {
   return (
     <>
       <GlobalCursor />
-      <SFFooter />
       <Routes>
 
         <Route path="/"         element={<LandingPage />} />

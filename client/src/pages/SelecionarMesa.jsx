@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
 import api from '../services/api'
+import SFFooter from '../components/SFFooter'
 
 export default function SelecionarMesa() {
   const { user, logout } = useAuth()
@@ -191,6 +192,7 @@ export default function SelecionarMesa() {
           </p>
         </div>
       </main>
+      <SFFooter />
     </div>
   )
 }

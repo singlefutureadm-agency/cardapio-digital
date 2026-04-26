@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
+import SFFooter from '../components/SFFooter'
 
 const NAV = [
   { to: (mesa) => `/cliente/${mesa}`,           label: 'Início',    icon: '🏠', end: true },
@@ -104,10 +105,11 @@ export default function ClienteLayout() {
       {/* ── Conteúdo ── */}
       <main className="relative z-10 flex-1 max-w-2xl mx-auto w-full px-4 py-4">
         <Outlet />
+        <SFFooter />
       </main>
 
       {/* ── Bottom nav mobile ── */}
-      <nav className="glass-panel z-40" style={{ ...navStyle, position: 'sticky', bottom: 38 }}>
+      <nav className="glass-panel sticky bottom-0 z-40" style={navStyle}>
         <div className="max-w-2xl mx-auto flex">
           {NAV.map(({ to, label, icon, end }) => {
             const path = to(mesa)

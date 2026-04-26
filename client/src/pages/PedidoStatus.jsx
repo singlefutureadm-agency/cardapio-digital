@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import socket from '../services/socket'
+import SFFooter from '../components/SFFooter'
 
 const ETAPAS = [
   { status: 'NOVO',       label: 'Recebido', icone: '📋' },
@@ -62,7 +63,7 @@ export default function PedidoStatus() {
   const msg        = MENSAGENS[pedido.status]
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--surface)' }}>
 
       {/* ── Header com navegação ── */}
       <header style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}>
@@ -241,6 +242,7 @@ export default function PedidoStatus() {
           </button>
         )}
       </main>
+      <SFFooter />
     </div>
   )
 }

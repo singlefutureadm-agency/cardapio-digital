@@ -7,6 +7,7 @@ import { API_BASE } from '../config'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ThemeToggle from '../components/ThemeToggle'
+import SFFooter from '../components/SFFooter'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -1068,6 +1069,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      <SFFooter />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import PreferenciasForm from '../components/PreferenciasForm'
+import SFFooter from '../components/SFFooter'
 
 export default function Register() {
   const { register } = useAuth()
@@ -47,7 +48,8 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center px-5 py-10">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--surface)' }}>
+      <div className="flex-1 flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-sm">
 
         {/* Header */}
@@ -136,6 +138,8 @@ export default function Register() {
 
         </div>
       </div>
+      </div>
+      <SFFooter />
     </div>
   )
 }

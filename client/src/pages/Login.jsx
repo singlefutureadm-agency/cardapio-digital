@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
+import SFFooter from '../components/SFFooter'
 
 export default function Login() {
   const { login } = useAuth()
@@ -55,8 +56,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 relative"
+    <div className="min-h-screen flex flex-col"
          style={{ background: 'var(--surface)', fontFamily: 'DM Sans' }}>
+
+      <div className="flex-1 flex items-center justify-center px-5 relative">
 
       {/* Fundo decorativo */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -208,6 +211,9 @@ export default function Login() {
           </Link>
         </div>
       </div>
+
+      </div>
+      <SFFooter />
     </div>
   )
 }
