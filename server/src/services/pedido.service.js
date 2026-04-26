@@ -1,0 +1,124 @@
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
+
+const criarPedido = async ({ mesa, itens, userId }) => {
+  const menuItems = await prisma.menuItem.findMany({
+    where: { id: { in: itens.map((i) => i.menuItemId) } },
+  })
+
+  if (menuItems.length !== itens.length) {
+    throw Object.assign(new Error('Item do menu não encontrado'), { status: 404 })
+  }
+
+  const itensComPreco = itens.map((item) => {
+    const menuItem = menuItems.find((m) => m.id === item.menuItemId)
+    return {
+      ...item,
+      subtotal: Number(menuItem.preco) * item.quantidade,
+    }
+  })
+
+  const total = itensComPreco.reduce((acc, i) => acc + i.subtotal, 0)
+
+  const pedido = await prisma.pedido.create({
+    data: {
+      mesa,
+      total,
+      userId: userId ?? null,
+      itens: {
+        create: itensComPreco.map((i) => ({
+          menuItemId: i.menuItemId,
+          quantidade: i.quantidade,
+          observacao: i.observacao,
+          subtotal: i.subtotal,
+        })),
+      },
+    },
+    include: {
+      itens: { include: { menuItem: true } },
+    },
+  })
+
+  return pedido
+}
+
+const buscarPedido = async (id) => {
+  const pedido = await prisma.pedido.findUnique({
+    where: { id: Number(id) },
+    include: {
+      itens: { include: { menuItem: true } },
+      pagamento: true,
+    },
+  })
+
+  if (!pedido) {
+    throw Object.assign(new Error('Pedido não encontrado'), { status: 404 })
+  }
+
+  return pedido
+}
+
+const listarPedidos = async () => {
+  return prisma.pedido.findMany({
+    where: {
+      status: { notIn: ['ENTREGUE', 'CANCELADO'] },
+    },
+    include: {
+      itens: { include: { menuItem: true } },
+      pagamento: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+}
+
+const atualizarStatus = async (id, status) => {
+  const statusValidos = ['NOVO', 'PREPARANDO', 'PRONTO', 'ENTREGUE', 'CANCELADO']
+  if (!statusValidos.includes(status)) {
+    throw Object.assign(new Error('Status inválido'), { status: 400 })
+  }
+
+  return prisma.pedido.update({
+    where: { id: Number(id) },
+    data: { status },
+    include: {
+      itens: { include: { menuItem: true } },
+      pagamento: true,
+    },
+  })
+}
+
+const listarHistorico = async ({ mesa, status, dataInicio, dataFim, page = 1, limit = 20 }) => {
+  const where = {}
+
+  if (mesa) where.mesa = { contains: mesa, mode: 'insensitive' }
+  if (status) where.status = status
+  if (dataInicio || dataFim) {
+    where.createdAt = {}
+    if (dataInicio) where.createdAt.gte = new Date(dataInicio)
+    if (dataFim) {
+      const fim = new Date(dataFim)
+      fim.setHours(23, 59, 59, 999)
+      where.createdAt.lte = fim
+    }
+  }
+
+  const [pedidos, total] = await Promise.all([
+    prisma.pedido.findMany({
+      where,
+      include: {
+        itens: { include: { menuItem: { select: { id: true, nome: true } } } },
+        pagamento: true,
+        user: { select: { id: true, nome: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.pedido.count({ where }),
+  ])
+
+  return { pedidos, total, paginas: Math.ceil(total / limit), page }
+}
+
+// ← apenas um module.exports
+module.exports = { criarPedido, buscarPedido, listarPedidos, atualizarStatus, listarHistorico }

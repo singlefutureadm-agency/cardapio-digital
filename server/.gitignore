@@ -1,0 +1,29 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+.env.*
+
+# Build frontend
+dist/
+build/
+
+# Uploads (SEU CASO!)
+server/uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma (opcional, mas recomendado ignorar cache)
+prisma/generated/

@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════
+   TEMA LIGHT (padrão)
+═══════════════════════════ */
+:root,
+[data-theme='light'] {
+  --brand:          #C8520A;
+  --brand-light:    #FDF0E8;
+  --brand-dark:     #9C3D06;
+
+  --surface:        #FAFAF8;
+  --card:           #FFFFFF;
+  --panel:          #F5F5F3;
+  --border:         #ECECEA;
+  --border-strong:  #D4D4D0;
+
+  --text-primary:   #1A1A18;
+  --text-secondary: #6B6B67;
+  --text-hint:      #A8A8A4;
+
+  --success:        #1D7A4A;
+  --success-bg:     #EAF5EF;
+  --warning:        #A05C00;
+  --warning-bg:     #FEF3E2;
+  --danger:         #991B1B;
+  --danger-bg:      #FEE2E2;
+
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:      0 8px 32px rgba(0,0,0,0.10);
+
+  color-scheme: light;
+}
+
+/* ═══════════════════════════
+   TEMA DARK
+═══════════════════════════ */
+[data-theme='dark'] {
+  --brand:          #E8702A;
+  --brand-light:    #2A1A0E;
+  --brand-dark:     #C8520A;
+
+  --surface:        #0F0F0D;
+  --card:           #1A1A17;
+  --border:         #2A2A26;
+  --border-strong:  #3A3A36;
+
+  --text-primary:   #F0EFE9;
+  --text-secondary: #9A9A94;
+  --text-hint:      #5A5A56;
+
+  --success:        #34D399;
+  --success-bg:     rgba(16,185,129,0.12);
+  --warning:        #FCD34D;
+  --warning-bg:     rgba(245,158,11,0.12);
+  --danger:         #F87171;
+  --danger-bg:      rgba(239,68,68,0.12);
+
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:      0 8px 32px rgba(0,0,0,0.5);
+
+  color-scheme: dark;
+}
+
+
+
+/* ── Glass mode — aplica nas áreas de dashboard e cliente ── */
+
+/* Cards e painéis (div com rounded-2xl/3xl) */
+html[data-glass="true"] .app-dashboard div.rounded-2xl,
+html[data-glass="true"] .app-dashboard div.rounded-3xl,
+html[data-glass="true"] .app-cliente  div.rounded-2xl,
+html[data-glass="true"] .app-cliente  div.rounded-3xl {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Cor do texto quando glass-text está definida */
+html[data-glass="true"] .glass-panel {
+  color: var(--glass-text, var(--text-primary));
+}
+html[data-glass="true"] .glass-panel p,
+html[data-glass="true"] .glass-panel span,
+html[data-glass="true"] .glass-panel h1,
+html[data-glass="true"] .glass-panel h2,
+html[data-glass="true"] .glass-panel h3 {
+  color: var(--glass-text, inherit);
+}
+
+/* ═══════════════════════════
+   BASE GLOBAL
+═══════════════════════════ */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--surface);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════
+   TRANSIÇÃO DE TEMA SUAVE
+═══════════════════════════ */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+@media (min-width: 1024px) {
+  *,
+  *::before,
+  *::after,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  label,
+  [role="button"] {
+    cursor: none !important;
+  }
+}
+
+/* Exceção: não animar transforms e animações GSAP */
+[style*='transform'],
+[style*='opacity'],
+.hero-title,
+.hero-badge,
+.hero-stat,
+canvas {
+  transition: background-color 0.25s ease, border-color 0.25s ease !important;
+}
+
+/* ═══════════════════════════
+   FONTES UTILITÁRIAS
+═══════════════════════════ */
+.font-display {
+  font-family: 'Playfair Display', serif;
+}
+
+/* ═══════════════════════════
+   SCROLLBAR GLOBAL
+═══════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-hint);
+}
+
+/* ═══════════════════════════
+   SELEÇÃO DE TEXTO
+═══════════════════════════ */
+::selection {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ═══════════════════════════
+   INPUTS GLOBAIS
+═══════════════════════════ */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-hint);
+}
+
+input[type='email'],
+input[type='text'],
+input[type='password'],
+textarea,
+select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+}
+
+input[type='email']:focus,
+input[type='text']:focus,
+input[type='password']:focus,
+textarea:focus {
+  border-color: var(--brand);
+  outline: none;
+}
+
+/* ═══════════════════════════
+   UTILITÁRIOS GLOBAIS
+═══════════════════════════ */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { scrollbar-width: none; }
+
+.card-surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.text-brand    { color: var(--brand); }
+.bg-brand      { background: var(--brand); }
+.bg-brand-light { background: var(--brand-light); }
+.border-brand  { border-color: var(--brand); }

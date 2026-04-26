@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MenuCategoria {
+  id    Int        @id @default(autoincrement())
+  nome  String
+  ordem Int        @default(0)
+  itens MenuItem[]
+}
+
+model MenuItem {
+  id          Int           @id @default(autoincrement())
+  nome        String
+  descricao   String?
+  preco       Decimal       @db.Decimal(10, 2)
+  disponivel  Boolean       @default(true)
+  categoriaId Int
+  categoria   MenuCategoria @relation(fields: [categoriaId], references: [id])
+  pedidoItens PedidoItem[]
+  imagemUrl   String?
+
+  @@map("menu_items")
+}
+
+model Pedido {
+  id        Int          @id @default(autoincrement())
+  mesa      String
+  mesaId    Int?
+  mesaRel   Mesa?        @relation(fields: [mesaId], references: [id])
+  status    StatusPedido @default(NOVO)
+  total     Decimal      @db.Decimal(10, 2)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  userId    Int?
+  user      User?        @relation(fields: [userId], references: [id])
+  itens     PedidoItem[]
+  pagamento Pagamento?
+}
+
+model PedidoItem {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int
+  menuItemId Int
+  quantidade Int
+  observacao String?
+  subtotal   Decimal  @db.Decimal(10, 2)
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("pedido_items")
+}
+
+model Pagamento {
+  id            Int             @id @default(autoincrement())
+  pedidoId      Int             @unique
+  tipo          TipoPagamento
+  metodo        MetodoPagamento @default(DINHEIRO)
+  status        StatusPagamento @default(PENDENTE)
+  qrCode        String?         @db.Text
+  pixCopiaECola String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  pedido        Pedido          @relation(fields: [pedidoId], references: [id])
+}
+
+model User {
+  id        Int                   @id @default(autoincrement())
+  nome      String
+  email     String                @unique
+  senha     String
+  role      Role                  @default(USER)
+  createdAt DateTime              @default(now())
+  pedidos   Pedido[]
+  respostas RespostaPreferencia[]
+  avaliacoes AvaliacaoShow[]
+}
+
+model Mesa {
+  id      Int      @id @default(autoincrement())
+  numero  String   @unique
+  ativa   Boolean  @default(true)
+  lugares Int      @default(4)
+  posX    Float    @default(0)
+  posY    Float    @default(0)
+  cor     String   @default("#10B981")
+  pedidos Pedido[]
+}
+
+model Configuracao {
+  id    Int    @id @default(autoincrement())
+  chave String @unique
+  valor String
+}
+
+model PerguntaPreferencia {
+  id        Int                   @id @default(autoincrement())
+  texto     String
+  ativa     Boolean               @default(true)
+  ordem     Int                   @default(0)
+  createdAt DateTime              @default(now())
+  opcoes    OpcaoPreferencia[]
+  respostas RespostaPreferencia[]
+}
+
+model OpcaoPreferencia {
+  id         Int                   @id @default(autoincrement())
+  perguntaId Int
+  texto      String
+  pergunta   PerguntaPreferencia   @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+  respostas  RespostaPreferencia[]
+}
+
+model RespostaPreferencia {
+  id         Int                 @id @default(autoincrement())
+  userId     Int
+  perguntaId Int
+  opcaoId    Int
+  createdAt  DateTime            @default(now())
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pergunta   PerguntaPreferencia @relation(fields: [perguntaId], references: [id])
+  opcao      OpcaoPreferencia    @relation(fields: [opcaoId], references: [id])
+
+  @@unique([userId, perguntaId])
+}
+
+model Newsletter {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum StatusPedido {
+  NOVO
+  PREPARANDO
+  PRONTO
+  ENTREGUE
+  CANCELADO
+}
+
+enum TipoPagamento {
+  GARCOM
+  ONLINE
+}
+
+enum MetodoPagamento {
+  DINHEIRO
+  CARTAO
+  PIX
+}
+
+enum StatusPagamento {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Artista {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  bio         String?
+  genero      String?
+  imagemUrl   String?
+  instagram   String?
+  spotify     String?
+  youtube     String?
+  tiktok      String?
+  site        String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shows       Show[]
+}
+
+model Show {
+  id          Int       @id @default(autoincrement())
+  titulo      String
+  descricao   String?
+  data        DateTime
+  horario     String
+  genero      String?
+  imagemUrl   String?
+  ativo       Boolean   @default(true)
+  artistaId   Int?
+  artista     Artista?  @relation(fields: [artistaId], references: [id])
+  avaliacoes  AvaliacaoShow[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AvaliacaoShow {
+  id        Int      @id @default(autoincrement())
+  showId    Int
+  userId    Int
+  nota      Int      // 1-5
+  comentario String?
+  createdAt DateTime @default(now())
+  show      Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([showId, userId])
+}
