@@ -4,12 +4,15 @@ node_modules/
 # Variáveis de ambiente
 .env
 .env.*
+.env.local
+.env.production
 
-# Build frontend
+# Build
 dist/
 build/
 
 # Uploads locais (usar Supabase Storage em produção)
+server/uploads/
 uploads/
 
 # Logs
@@ -25,5 +28,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Prisma (opcional, mas recomendado ignorar cache)
-prisma/generated/
+# Prisma cache
+server/prisma/generated/

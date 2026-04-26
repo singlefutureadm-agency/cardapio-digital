@@ -2,13 +2,10 @@ const { Router } = require('express')
 const multer = require('multer')
 const path = require('path')
 const svc = require('../services/artista.service')
+const storage = require('../services/storage.service')
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware')
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, `artista_${req.params.id}${path.extname(file.originalname)}`),
-})
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
 
 const router = Router()
 
@@ -38,7 +35,9 @@ router.delete('/:id', authMiddleware, isAdmin, async (req, res, next) => {
 
 router.put('/:id/imagem', authMiddleware, isAdmin, upload.single('imagem'), async (req, res, next) => {
   try {
-    const imagemUrl = `/uploads/${req.file.filename}`
+    const ext = path.extname(req.file.originalname).toLowerCase()
+    const filename = `artista_${req.params.id}${ext}`
+    const imagemUrl = await storage.uploadFile(req.file.buffer, filename, req.file.mimetype)
     res.json(await svc.salvarImagem(req.params.id, imagemUrl))
   } catch (e) { next(e) }
 })

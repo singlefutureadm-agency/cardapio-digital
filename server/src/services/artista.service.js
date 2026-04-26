@@ -1,9 +1,12 @@
 const { PrismaClient } = require('@prisma/client')
-const fs = require('fs')
-const path = require('path')
+const storage = require('./storage.service')
+
 const prisma = new PrismaClient()
 
-const listar = () => prisma.artista.findMany({ orderBy: { nome: 'asc' }, include: { _count: { select: { shows: true } } } })
+const listar = () => prisma.artista.findMany({
+  orderBy: { nome: 'asc' },
+  include: { _count: { select: { shows: true } } },
+})
 
 const listarAtivos = () => prisma.artista.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } })
 
@@ -18,28 +21,19 @@ const atualizar = (id, data) => prisma.artista.update({ where: { id: Number(id) 
 
 const excluir = async (id) => {
   const artista = await prisma.artista.findUnique({ where: { id: Number(id) } })
-  if (artista?.imagemUrl && artista.imagemUrl.startsWith('/uploads/')) {
-    const filePath = path.join(__dirname, '../../', artista.imagemUrl)
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-  }
+  await storage.deleteFile(artista?.imagemUrl)
   return prisma.artista.delete({ where: { id: Number(id) } })
 }
 
 const salvarImagem = async (id, imagemUrl) => {
   const artista = await prisma.artista.findUnique({ where: { id: Number(id) } })
-  if (artista?.imagemUrl && artista.imagemUrl.startsWith('/uploads/')) {
-    const old = path.join(__dirname, '../../', artista.imagemUrl)
-    if (fs.existsSync(old)) fs.unlinkSync(old)
-  }
+  await storage.deleteFile(artista?.imagemUrl)
   return prisma.artista.update({ where: { id: Number(id) }, data: { imagemUrl } })
 }
 
 const removerImagem = async (id) => {
   const artista = await prisma.artista.findUnique({ where: { id: Number(id) } })
-  if (artista?.imagemUrl && artista.imagemUrl.startsWith('/uploads/')) {
-    const filePath = path.join(__dirname, '../../', artista.imagemUrl)
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-  }
+  await storage.deleteFile(artista?.imagemUrl)
   return prisma.artista.update({ where: { id: Number(id) }, data: { imagemUrl: null } })
 }
 

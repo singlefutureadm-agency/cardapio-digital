@@ -128,7 +128,9 @@ function aplicarTheme(vars) {
 
 function resolveBgUrl(raw) {
   if (!raw) return ''
-  return raw.startsWith('http') ? raw : `http://localhost:3001${raw}`
+  if (raw.startsWith('http')) return raw
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '')
+  return `${base}${raw}`
 }
 
 export function ThemeProvider({ children }) {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../services/api'
+import { API_BASE } from '../config'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ThemeToggle from '../components/ThemeToggle'
@@ -807,7 +808,7 @@ export default function LandingPage() {
                 const imgUrl = show.artista?.imagemUrl
                   ? show.artista.imagemUrl.startsWith('http')
                     ? show.artista.imagemUrl
-                    : `http://localhost:3001${show.artista.imagemUrl}`
+                    : `${API_BASE}${show.artista.imagemUrl}`
                   : null
                 return (
                   <div key={show.id}

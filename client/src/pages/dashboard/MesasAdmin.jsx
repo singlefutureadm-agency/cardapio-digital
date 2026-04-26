@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import api from '../../services/api'
+import { API_BASE } from '../../config'
 
 const PLANTA_W = 1200
 const PLANTA_H = 600
@@ -252,7 +253,7 @@ export default function MesasAdmin() {
       api.get('/upload/planta/info').catch(() => ({ data: { url: null } })),
     ])
     if (plantaData.url) {
-      setPlantaUrl(`http://localhost:3001${plantaData.url}?t=${Date.now()}`)
+      setPlantaUrl(`${plantaData.url.startsWith('http') ? plantaData.url : `${API_BASE}${plantaData.url}`}?t=${Date.now()}`)
     }
     const semPosicao = mesasData.filter(m => m.posX === 0 && m.posY === 0)
     if (semPosicao.length > 0) {
@@ -333,7 +334,7 @@ export default function MesasAdmin() {
       const fd = new FormData()
       fd.append('planta', file)
       const { data } = await api.post('/upload/planta', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setPlantaUrl(`http://localhost:3001${data.url}?t=${Date.now()}`)
+      setPlantaUrl(`${data.url.startsWith('http') ? data.url : `${API_BASE}${data.url}`}?t=${Date.now()}`)
       setModalPlanta(false)
     } catch (err) {
       setUploadErro(err.response?.data?.error || 'Erro ao fazer upload.')

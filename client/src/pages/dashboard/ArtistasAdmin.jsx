@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../../services/api'
+import { API_BASE } from '../../config'
 
 const REDES = [
   { key: 'instagram', label: 'Instagram', icon: '📸', placeholder: 'https://instagram.com/...' },
@@ -10,7 +11,6 @@ const REDES = [
 ]
 const GENEROS = ['Samba', 'MPB', 'Jazz', 'Rock', 'Sertanejo', 'Pagode', 'Forró', 'Eletrônico', 'Outro']
 const vazio = { nome: '', bio: '', genero: '', instagram: '', spotify: '', youtube: '', tiktok: '', site: '', ativo: true }
-const API_BASE = 'http://localhost:3001'
 
 export default function ArtistasAdmin() {
   const [artistas, setArtistas] = useState([])

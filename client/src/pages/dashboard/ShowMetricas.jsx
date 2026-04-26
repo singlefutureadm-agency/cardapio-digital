@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, Cell } from 'recharts'
 import api from '../../services/api'
-
-const API_BASE = 'http://localhost:3001'
+import { API_BASE } from '../../config'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null

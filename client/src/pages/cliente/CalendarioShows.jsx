@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import api from '../../services/api'
+import { API_BASE } from '../../config'
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const GENERO_EMOJI = { Samba:'🪘', MPB:'🎵', Jazz:'🎷', Rock:'🎸', Sertanejo:'🤠', Pagode:'🥁', Forró:'🪗', Eletrônico:'🎛️', Outro:'🎤' }
-const API_BASE = 'http://localhost:3001'
 
 function AvaliarShow({ show, onAvaliado }) {
   const [nota, setNota]           = useState(0)

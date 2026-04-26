@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import gsap from 'gsap'
 
+import { API_BASE } from '../../config'
+
 const TRANSITION_MS = 700
 const SLIDE_DURATION_MS = 7000
-const API_BASE = 'http://localhost:3001'
 
 const GENERO_EMOJI = {
     Samba: '🪘', MPB: '🎵', Jazz: '🎷', Rock: '🎸',

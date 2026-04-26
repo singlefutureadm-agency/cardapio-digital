@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../../context/ThemeContext'
 import api from '../../services/api'
+import { API_BASE } from '../../config'
 
 const GRUPOS = [
   {
@@ -577,7 +578,7 @@ export default function ConfiguracoesAdmin() {
             {/* Preview da imagem atual */}
             {glassBgUrl && (
               <div className="mb-4 relative rounded-xl overflow-hidden" style={{ height: 120 }}>
-                <img src={glassBgUrl.startsWith('http') ? glassBgUrl : `http://localhost:3001${glassBgUrl}`}
+                <img src={glassBgUrl.startsWith('http') ? glassBgUrl : `${API_BASE}${glassBgUrl}`}
                      alt="Fundo atual" className="w-full h-full object-cover" />
                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <button onClick={removerBg} disabled={uploadandoBg}

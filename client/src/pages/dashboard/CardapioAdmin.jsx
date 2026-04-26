@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../../services/api'
+import { API_BASE } from '../../config'
 
 const VAZIO = { nome: '', descricao: '', preco: '', categoriaId: '', disponivel: true }
-const API_BASE = 'http://localhost:3001'
 
 export default function CardapioAdmin() {
   const [itens, setItens]               = useState([])

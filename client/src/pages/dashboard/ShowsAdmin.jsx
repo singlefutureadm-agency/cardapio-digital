@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import api from '../../services/api'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE } from '../../config'
 
 const GENEROS = ['Samba', 'MPB', 'Jazz', 'Rock', 'Sertanejo', 'Pagode', 'Forró', 'Eletrônico', 'Outro']
 const vazio = { titulo: '', artistaId: '', genero: '', descricao: '', data: '', horario: '', ativo: true }
-const API_BASE = 'http://localhost:3001'
 
 export default function ShowsAdmin() {
   const navigate = useNavigate()

@@ -1,7 +1,6 @@
-import axios from "axios";
+import axios from 'axios'
+import { API_URL } from '../config'
 
-const api = axios.create({
-  baseURL: "https://cardapio-digital-2k1u.onrender.com"
-});
+const api = axios.create({ baseURL: API_URL })
 
-export default api;
+export default api
