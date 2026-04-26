@@ -7,10 +7,14 @@
 
 ## Visão Geral
 
-Sistema fullstack de cardápio digital para restaurante com pedidos em tempo real, dashboard admin, área do cliente, pagamento Pix, calendário de shows com artistas, métricas pós-show, preferências de público, menu TV e analytics.
+Sistema fullstack de cardápio digital para restaurante com pedidos em tempo real,
+dashboard admin, área do cliente, pagamento Pix, calendário de shows com artistas,
+métricas pós-show, preferências de público, menu TV, analytics e sistema de feature flags
+controlados por um superadmin (ADMINSF).
 
-**Repositório:** `https://github.com/singlefutureadm-agency/cardapio-digital`  
-**Infraestrutura:** Frontend → Vercel | Backend → Render | Banco + Storage → Supabase
+**Repositório:** `https://github.com/singlefutureadm-agency/cardapio-digital`
+**Frontend:** Vercel | **Backend:** Render | **Banco + Storage:** Supabase
+**Licença:** Proprietária — Autor: Miguel Cezar Ferreira / Licenciado: Single Future
 
 ---
 
@@ -21,8 +25,8 @@ Sistema fullstack de cardápio digital para restaurante com pedidos em tempo rea
 |---|---|
 | Framework | React 19 + Vite 8 |
 | Estilo | Tailwind CSS 3 + CSS Variables customizadas |
-| Fontes | DM Sans + Playfair Display (Google Fonts) |
-| Estado global | Zustand 5 |
+| Fontes | DM Sans + Playfair Display + Orbitron (footer SF) |
+| Estado global | Zustand 5 + AuthContext + ThemeContext |
 | Roteamento | React Router DOM 7 |
 | HTTP | Axios — instância em `services/api.js` com interceptor JWT |
 | Realtime | Socket.io-client 4 |
@@ -37,7 +41,7 @@ Sistema fullstack de cardápio digital para restaurante com pedidos em tempo rea
 | Runtime | Node.js ≥20 |
 | Framework | Express 5 |
 | ORM | Prisma 5 |
-| Banco | PostgreSQL (Supabase) |
+| Banco | PostgreSQL (Supabase, PgBouncer porta 6543) |
 | Realtime | Socket.io 4 |
 | Auth | JWT + bcryptjs |
 | Validação | Zod 4 |
@@ -52,245 +56,353 @@ Sistema fullstack de cardápio digital para restaurante com pedidos em tempo rea
 ```
 cardapio-digital/
 ├── client/
-│   ├── hooks/
-│   │   └── useShows.js              → hook useProximosShows()
-│   ├── src/
-│   │   ├── App.jsx                  → definição de rotas (React Router)
-│   │   ├── config/
-│   │   │   └── index.js             → API_BASE e API_URL centralizados
-│   │   ├── components/
-│   │   │   ├── CarrinhoFlutuante.jsx
-│   │   │   ├── CarrinhoItem.jsx
-│   │   │   ├── CategoriaTab.jsx
-│   │   │   ├── GlobalCursor.jsx
-│   │   │   ├── ItemCard.jsx
-│   │   │   ├── PedidoCard.jsx
-│   │   │   ├── PreferenciasForm.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   └── ThemeToggle.jsx
-│   │   ├── context/
-│   │   │   ├── AuthContext.jsx      → usuário, token JWT, interceptor Axios
-│   │   │   └── ThemeContext.jsx     → tema, glass effect, imagem de fundo
-│   │   ├── layouts/
-│   │   │   ├── ClienteLayout.jsx
-│   │   │   └── DashboardLayout.jsx → sidebar com grupos Restaurante/Shows/etc
-│   │   ├── pages/
-│   │   │   ├── LandingPage.jsx     → seção Próximos Shows
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── SelecionarMesa.jsx
-│   │   │   ├── PedidoStatus.jsx
-│   │   │   ├── Carrinho.jsx        → importado por ClienteCarrinho
-│   │   │   ├── cliente/
-│   │   │   │   ├── CalendarioShows.jsx   → calendário mensal com avaliações
-│   │   │   │   ├── ClienteCardapio.jsx
-│   │   │   │   ├── ClienteCarrinho.jsx
-│   │   │   │   ├── ClienteCheckout.jsx   → checkout com Pix/Cartão/Dinheiro
-│   │   │   │   ├── ClienteHome.jsx       → home com CalendarioShows
-│   │   │   │   ├── ClientePedidos.jsx
-│   │   │   │   └── ClientePerfil.jsx
-│   │   │   └── dashboard/
-│   │   │       ├── ArtistasAdmin.jsx     → CRUD artistas + upload/URL imagem
-│   │   │       ├── CardapioAdmin.jsx     → CRUD itens + categorias + imagem
-│   │   │       ├── ConfiguracoesAdmin.jsx
-│   │   │       ├── CozinhaView.jsx       → tempo real, atualiza status pedidos
-│   │   │       ├── DashboardHome.jsx     → KPIs e resumo
-│   │   │       ├── HistoricoPedidos.jsx  → filtros + gráficos Recharts
-│   │   │       ├── MenuTV.jsx            → carrossel full-screen + slide shows
-│   │   │       ├── MesasAdmin.jsx        → mapa drag-and-drop
-│   │   │       ├── NewsletterAdmin.jsx
-│   │   │       ├── PagamentosPendentes.jsx
-│   │   │       ├── PreferenciasAdmin.jsx
-│   │   │       ├── PreferenciasAnalytics.jsx
-│   │   │       ├── ShowMetricas.jsx      → relatório pós-show
-│   │   │       ├── ShowsAdmin.jsx        → CRUD shows + vínculo artista
-│   │   │       └── UsuariosAdmin.jsx
-│   │   ├── services/
-│   │   │   ├── api.js              → instância Axios com baseURL e interceptor JWT
-│   │   │   └── socket.js           → instância Socket.io-client
-│   │   └── store/
-│   │       ├── useCarrinhoStore.js
-│   │       └── usePedidoStore.js
-│   ├── .env                        → VITE_API_BASE_URL=http://localhost:3001
-│   ├── .env.production             → VITE_API_BASE_URL=https://api.onrender.com (commitado)
-│   └── vercel.json                 → rewrite SPA para index.html
+│   ├── index.html                  → fontes Google (DM Sans, Playfair, Orbitron)
+│   └── src/
+│       ├── App.jsx                 → rotas + FeatureGate + ProtectedRoute
+│       ├── config/index.js         → API_BASE e API_URL
+│       ├── components/
+│       │   ├── GlobalCursor.jsx
+│       │   ├── ProtectedRoute.jsx  → props: adminOnly, adminSFOnly
+│       │   ├── SFFooter.jsx        → rodapé Single Future (todas as páginas)
+│       │   ├── ThemeToggle.jsx
+│       │   ├── CarrinhoFlutuante.jsx
+│       │   ├── ItemCard.jsx
+│       │   ├── PedidoCard.jsx
+│       │   └── PreferenciasForm.jsx
+│       ├── context/
+│       │   ├── AuthContext.jsx     → user, login, logout, register, token JWT
+│       │   └── ThemeContext.jsx    → isDark, glass, bgUrl, features, salvarCores()
+│       ├── layouts/
+│       │   ├── DashboardLayout.jsx → sidebar buildNav(role, features), SFFooter
+│       │   └── ClienteLayout.jsx   → header, bottom nav, SFFooter sticky-footer
+│       ├── pages/
+│       │   ├── LandingPage.jsx     → shows gated por features.shows
+│       │   ├── Login.jsx           → redireciona ADMIN+ADMINSF→/dashboard, USER→/selecionar-mesa
+│       │   ├── Register.jsx
+│       │   ├── SelecionarMesa.jsx
+│       │   ├── PedidoStatus.jsx
+│       │   ├── Carrinho.jsx
+│       │   ├── cliente/
+│       │   │   ├── CalendarioShows.jsx
+│       │   │   ├── ClienteCardapio.jsx
+│       │   │   ├── ClienteCarrinho.jsx
+│       │   │   ├── ClienteCheckout.jsx
+│       │   │   ├── ClienteHome.jsx        → CalendarioShows gated por features.shows
+│       │   │   ├── ClientePedidos.jsx
+│       │   │   └── ClientePerfil.jsx
+│       │   └── dashboard/
+│       │       ├── ArtistasAdmin.jsx
+│       │       ├── CardapioAdmin.jsx
+│       │       ├── ConfiguracoesAdmin.jsx
+│       │       ├── CozinhaView.jsx
+│       │       ├── DashboardHome.jsx
+│       │       ├── FuncionalidadesAdmin.jsx  ← ADMINSF only — toggles features
+│       │       ├── HistoricoPedidos.jsx
+│       │       ├── MenuTV.jsx
+│       │       ├── MesasAdmin.jsx
+│       │       ├── NewsletterAdmin.jsx
+│       │       ├── PagamentosPendentes.jsx
+│       │       ├── PreferenciasAdmin.jsx
+│       │       ├── PreferenciasAnalytics.jsx
+│       │       ├── ShowMetricas.jsx
+│       │       ├── ShowsAdmin.jsx
+│       │       └── UsuariosAdmin.jsx
+│       ├── services/
+│       │   ├── api.js              → Axios com baseURL=API_URL e interceptor JWT
+│       │   └── socket.js           → Socket.io-client
+│       ├── store/
+│       │   ├── useCarrinhoStore.js
+│       │   └── usePedidoStore.js
+│       └── index.css               → CSS vars, light/dark/glass, scrollbar, inputs
 │
 ├── server/
 │   ├── src/
-│   │   ├── app.js                  → Express, CORS, middlewares, rotas
-│   │   ├── server.js               → HTTP server + Socket.io
-│   │   ├── controllers/            → lógica dos endpoints
+│   │   ├── app.js
+│   │   ├── server.js
+│   │   ├── lib/
+│   │   │   └── prisma.js           ← SINGLETON — único PrismaClient do projeto
+│   │   ├── controllers/
 │   │   ├── middlewares/
-│   │   │   ├── auth.middleware.js  → verifica JWT, injeta req.user
+│   │   │   ├── auth.middleware.js  → authMiddleware / isAdmin / isAdminSF
 │   │   │   ├── error.middleware.js
 │   │   │   └── validate.middleware.js
-│   │   ├── routes/                 → definição de rotas HTTP
-│   │   ├── services/               → regras de negócio e acesso ao Prisma
-│   │   │   └── storage.service.js  → uploadFile / deleteFile para Supabase Storage
+│   │   ├── routes/
+│   │   ├── services/               → todos importam `../lib/prisma`
+│   │   │   └── storage.service.js
 │   │   └── validators/
-│   │       ├── auth.validator.js
-│   │       └── pedido.validator.js
 │   ├── prisma/
-│   │   ├── schema.prisma           → schema completo do banco
+│   │   ├── schema.prisma           → relationMode="prisma" (obrigatório PgBouncer)
 │   │   ├── seed.js
-│   │   └── migrations/             → 2 migrations (init + add_artistas_avaliacoes)
-│   └── uploads/                    → imagens locais (apenas desenvolvimento)
+│   │   └── migrations/
+│   └── uploads/                    → fallback local sem Supabase
 │
-├── render.yaml                     → config de deploy do backend no Render
-└── DOCUMENTACAO.md                 → guia completo de deploy e arquitetura
+├── LICENSE                         → proprietária, autor: Miguel Cezar Ferreira
+├── render.yaml
+├── README.md
+└── DOCUMENTACAO.md
 ```
+
+---
+
+## Sistema de Roles e Feature Flags
+
+### Roles
+
+| Role | Acesso |
+|---|---|
+| `USER` | `/cliente/:mesa` e sub-rotas |
+| `ADMIN` | `/dashboard` completo, limitado pelas feature flags |
+| `ADMINSF` | Acesso total + página `/dashboard/funcionalidades` para toggle de features |
+
+**Regra de redirecionamento no login:**
+```js
+if (role === 'ADMIN' || role === 'ADMINSF') navigate('/dashboard')
+else navigate('/selecionar-mesa')
+```
+
+### Feature Flags
+
+Salvas na tabela `Configuracao` como `'0'` / `'1'` (ausência = ativado por padrão):
+
+| Chave | Feature controlada |
+|---|---|
+| `feature_shows` | Shows, Artistas, CalendarioShows, seção Shows na LandingPage |
+| `feature_menutv` | MenuTV (rota pública + preview no dashboard) |
+| `feature_preferencias` | PreferenciasAdmin + Analytics |
+| `feature_mesas` | MesasAdmin |
+
+Derivação no `ThemeContext`:
+```js
+const features = {
+  shows:        config.feature_shows        !== '0',
+  menutv:       config.feature_menutv       !== '0',
+  preferencias: config.feature_preferencias !== '0',
+  mesas:        config.feature_mesas        !== '0',
+}
+```
+
+`FuncionalidadesAdmin` usa `salvarCores({ feature_shows: '0' })` do ThemeContext
+para persistir as flags — reutiliza o mesmo endpoint `POST /api/configuracoes`.
+
+`ADMINSF` nunca é bloqueado pelo `FeatureGate`, independente do valor da flag.
 
 ---
 
 ## Banco de Dados — Models
 
-**User** — `id, nome, email, senha (bcrypt), role: USER|ADMIN, createdAt`  
-relações: `pedidos[], respostas[], avaliacoes[]`
+**User** — `id, nome, email, senha (bcrypt), role: USER|ADMIN|ADMINSF, createdAt`
 
-**MenuCategoria** — `id, nome, ordem`  
-relações: `itens: MenuItem[]`
+**MenuCategoria** — `id, nome, ordem`
 
-**MenuItem** — `@@map("menu_items")` — `id, nome, descricao, preco: Decimal, disponivel, categoriaId, imagemUrl?`  
+**MenuItem** — `@@map("menu_items")` — `id, nome, descricao, preco, disponivel, categoriaId, imagemUrl?`
 `imagemUrl` é URL absoluta do Supabase Storage (https://...)
 
-**Pedido** — `id, mesa: String, mesaId?, status: StatusPedido, total: Decimal, userId?, createdAt, updatedAt`  
-relações: `itens[], pagamento?, mesaRel?, user?`
+**Pedido** — `id, mesa, mesaId?, status: StatusPedido, total, userId?, createdAt`
 
-**PedidoItem** — `@@map("pedido_items")` — `id, pedidoId, menuItemId, quantidade, observacao?, subtotal: Decimal`
+**PedidoItem** — `@@map("pedido_items")` — `id, pedidoId, menuItemId, quantidade, observacao?, subtotal`
 
-**Pagamento** — `id, pedidoId @unique, tipo: TipoPagamento, metodo: MetodoPagamento, status: StatusPagamento, qrCode? @db.Text, pixCopiaECola? @db.Text`
+**Pagamento** — `id, pedidoId @unique, tipo, metodo, status, qrCode?, pixCopiaECola?`
 
-**Mesa** — `id, numero @unique, ativa, lugares: Int, posX: Float, posY: Float, cor: String`
+**Mesa** — `id, numero @unique, ativa, lugares, posX, posY, cor`
 
-**Configuracao** — `id, chave @unique, valor` — tema com prefixos `light_`/`dark_`; também `planta_url`
+**Configuracao** — `id, chave @unique, valor`
+Chaves: `light_*` / `dark_*` (cores do tema), `planta_url`, `feature_*` (flags)
 
-**Newsletter** — `id, email @unique, ativo, createdAt`
+**Newsletter** — `id, email @unique, ativo`
 
-**PerguntaPreferencia** — `id, texto, ativa, ordem, createdAt` — relações: `opcoes[], respostas[]`
+**PerguntaPreferencia / OpcaoPreferencia / RespostaPreferencia** — `@@unique([userId, perguntaId])`
 
-**OpcaoPreferencia** — `id, perguntaId, texto` — `onDelete: Cascade`
+**Artista** — `id, nome, bio?, genero?, imagemUrl?, instagram?, spotify?, youtube?, tiktok?, site?, ativo`
 
-**RespostaPreferencia** — `id, userId, perguntaId, opcaoId` — `@@unique([userId, perguntaId])`
+**Show** — `id, titulo, descricao?, data, horario, genero?, imagemUrl?, ativo, artistaId?`
 
-**Artista** — `id, nome, bio?, genero?, imagemUrl?, instagram?, spotify?, youtube?, tiktok?, site?, ativo, createdAt, updatedAt`
-
-**Show** — `id, titulo, descricao?, data: DateTime, horario: String, genero?, imagemUrl?, ativo, artistaId?`
-
-**AvaliacaoShow** — `id, showId, userId, nota: Int (1-5), comentario?` — `@@unique([showId, userId])`
+**AvaliacaoShow** — `id, showId, userId, nota (1-5), comentario?` — `@@unique([showId, userId])`
 
 ### Enums
-
-```prisma
-enum StatusPedido    { NOVO PREPARANDO PRONTO ENTREGUE CANCELADO }
-enum TipoPagamento   { GARCOM ONLINE }
-enum MetodoPagamento { DINHEIRO CARTAO PIX }
-enum StatusPagamento { PENDENTE PAGO CANCELADO }
-enum Role            { USER ADMIN }
+```
+StatusPedido:    NOVO | PREPARANDO | PRONTO | ENTREGUE | CANCELADO
+TipoPagamento:   GARCOM | ONLINE
+MetodoPagamento: DINHEIRO | CARTAO | PIX
+StatusPagamento: PENDENTE | PAGO | CANCELADO
+Role:            USER | ADMIN | ADMINSF
 ```
 
-### Migrations (Prisma)
+---
 
-Apenas 2 arquivos de migration presentes:
-- `20260425170240_init` — schema completo inicial (todos os models exceto Artista/AvaliacaoShow)
-- `20260425172934_add_artistas_avaliacoes` — adiciona Artista, AvaliacaoShow e User.avaliacoes
+## PrismaClient e PgBouncer — Regras Críticas
 
-> Outros incrementos históricos (mesas, pix, shows etc.) foram aplicados via `db push` ou SQL direto e não têm migration file separado.
+O banco usa Supabase Pooler (PgBouncer, porta 6543). Para funcionar:
+
+1. **Singleton obrigatório** — `server/src/lib/prisma.js`:
+```js
+const prisma = new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL } },
+  log: ['error'],
+})
+module.exports = prisma
+```
+Todos os services e routes importam: `const prisma = require('../lib/prisma')`
+**NUNCA** criar `new PrismaClient()` em outros arquivos.
+
+2. **DATABASE_URL** deve conter:
+```
+?sslmode=require&pgbouncer=true&connection_limit=1&statement_cache_size=0
+```
+
+3. **schema.prisma** deve ter:
+```prisma
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+```
+
+4. **Adicionar valores a ENUMs**: usar SQL direto no Supabase SQL Editor:
+```sql
+ALTER TYPE "Role" ADD VALUE 'ADMINSF';
+```
+`npx prisma db push` falha para ENUMs com PgBouncer.
 
 ---
 
 ## Rotas React (App.jsx)
 
 ```
-/                           → LandingPage (seção shows automática)
-/login                      → Login
-/register                   → Register
-/selecionar-mesa            → SelecionarMesa (ProtectedRoute)
-/pedido/:id                 → PedidoStatus (ProtectedRoute)
-/menu-tv                    → MenuTV (público)
+/                             → LandingPage
+/login                        → Login
+/register                     → Register
+/selecionar-mesa              → SelecionarMesa (ProtectedRoute)
+/pedido/:id                   → PedidoStatus (ProtectedRoute)
+/menu-tv                      → MenuTV (FeatureGate: menutv)
 
-/cliente/:mesa              → ClienteLayout (ProtectedRoute)
-  index                     → ClienteHome (calendário de shows)
-  cardapio                  → ClienteCardapio
-  carrinho                  → ClienteCarrinho
-  checkout                  → ClienteCheckout
-  pedidos                   → ClientePedidos
-  perfil                    → ClientePerfil
+/cliente/:mesa                → ClienteLayout (ProtectedRoute)
+  index                       → ClienteHome
+  cardapio / carrinho / checkout / pedidos / perfil
 
-/dashboard                  → DashboardLayout (ProtectedRoute adminOnly)
-  index                     → DashboardHome
-  cozinha                   → CozinhaView
-  cardapio                  → CardapioAdmin
-  usuarios                  → UsuariosAdmin
-  newsletter                → NewsletterAdmin
-  mesas                     → MesasAdmin
-  preferencias              → PreferenciasAdmin
-  preferencias/analytics    → PreferenciasAnalytics
-  configuracoes             → ConfiguracoesAdmin
-  menu-tv                   → MenuTV (preview)
-  pagamentos                → PagamentosPendentes
-  historico                 → HistoricoPedidos
-  shows                     → ShowsAdmin
-  shows/:id/metricas        → ShowMetricas
-  artistas                  → ArtistasAdmin
+/dashboard                    → DashboardLayout (ProtectedRoute adminOnly)
+  index / cozinha / cardapio / usuarios / newsletter / historico / pagamentos
+  configuracoes               → ConfiguracoesAdmin
+  funcionalidades             → FuncionalidadesAdmin (ProtectedRoute adminSFOnly)
+  mesas                       → FeatureGate: mesas
+  menu-tv                     → FeatureGate: menutv
+  preferencias                → FeatureGate: preferencias
+  preferencias/analytics      → FeatureGate: preferencias
+  shows                       → FeatureGate: shows
+  shows/:id/metricas          → FeatureGate: shows
+  artistas                    → FeatureGate: shows
 ```
 
 ---
 
-## Configuração de URL (client/src/config/index.js)
+## Rotas da API Backend
+
+```
+/api/auth           → login, register, /me
+/api/menu           → cardápio público
+/api/admin          → CRUD cardápio + usuários (isAdmin)
+/api/pedidos        → criar, historico, atualizar status
+/api/pagamentos     → criar, buscar, pendentes, confirmar
+/api/mesas          → CRUD + /ativas público
+/api/upload         → POST/GET planta (isAdmin)
+/api/configuracoes  → tema + feature flags (GET público, POST isAdmin)
+/api/shows          → CRUD + proximos + passados + avaliar + metricas
+/api/artistas       → CRUD + ativos + upload/remover imagem
+/api/newsletter     → inscrição pública, admin gerencia
+/api/preferencias   → perguntas, opções e respostas
+/api/cliente        → historico do cliente logado
+```
+
+---
+
+## SFFooter — Rodapé Single Future
+
+**Arquivo:** `client/src/components/SFFooter.jsx`
+**Presente em:** todas as páginas (DashboardLayout, ClienteLayout, Login, Register,
+SelecionarMesa, PedidoStatus, LandingPage)
+**Estilo:** fundo `#040404`, cor `#00e5a8`, fonte `Orbitron`, link para `www.singlefuture.com.br`
+
+**Padrão sticky-footer (sem position:fixed):**
+```jsx
+// Container pai
+<div className="min-h-screen flex flex-col">
+  {/* conteúdo que deve crescer */}
+  <div className="flex-1">...</div>
+  <SFFooter />
+</div>
+```
+Nos layouts (DashboardLayout, ClienteLayout), `<Outlet />` é envolvido em `<div className="flex-1">` dentro de um `<main className="flex flex-col">`.
+
+---
+
+## Configuração de URL e Imagens
 
 ```js
+// client/src/config/index.js
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '')
 export const API_URL  = `${API_BASE}/api`
 ```
 
-- `API_URL` → baseURL do Axios (todas as chamadas de dados)
-- `API_BASE` → base para Socket.io e para resolver `imagemUrl` relativa
+- `API_URL` → baseURL do Axios
+- `API_BASE` → base para Socket.io e para imagens relativas
 
-**Regra de imagemUrl:** sempre checar `startsWith('http')` antes de prefixar com `API_BASE`.  
-URLs do Supabase Storage já são absolutas. URLs legadas de `server/uploads/` são relativas.
+**Regra de imagemUrl — SEMPRE verificar:**
 ```js
-src={item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`}
+src={url.startsWith('http') ? url : `${API_BASE}${url}`}
 ```
 
 ---
 
-## Backend — Rotas da API
+## CSS Variables de Referência
+
+```css
+/* Marca */
+--brand, --brand-light, --brand-dark
+
+/* Superfícies */
+--surface, --card, --panel, --border, --border-strong
+
+/* Tipografia */
+--text-primary, --text-secondary, --text-hint
+
+/* Semânticas */
+--success, --success-bg, --warning, --warning-bg, --danger, --danger-bg
+
+/* Sombras */
+--shadow-sm, --shadow-md, --shadow-lg
+```
+
+Aplicadas via `data-theme="light"` / `data-theme="dark"` no `<html>`.
+Glass mode via `data-glass="true"` no `<html>`.
+
+---
+
+## Socket.io — Salas e Eventos
 
 ```
-/api/auth           — login, register, /me
-/api/menu           — cardápio público (categorias + itens)
-/api/admin          — CRUD cardápio, imagens, usuários (admin)
-/api/pedidos        — criar, listar historico, atualizar status
-/api/pagamentos     — criar, buscar, pendentes, confirmar
-/api/mesas          — CRUD + /ativas público
-/api/upload         — POST /planta, GET /planta/info
-/api/configuracoes  — tema e fundo (GET público, POST admin)
-/api/shows          — CRUD + /proximos + /passados + /avaliar + /metricas
-/api/artistas       — CRUD + /ativos + upload/remover imagem
-/api/newsletter     — inscrição pública, admin gerencia
-/api/preferencias   — perguntas, opções e respostas
-/api/cliente        — historico do cliente logado
+Salas:
+  cozinha       → admin/cozinheiro
+  mesa_{numero} → cliente daquela mesa
+
+Eventos servidor → cliente:
+  pedido_novo        → sala cozinha  (pedido criado)
+  pedido_atualizado  → sala cozinha  (status mudou)
+  status_atualizado  → sala mesa_X   ({ pedidoId, status })
 ```
 
 ---
 
-## Storage de Imagens (Supabase Storage)
+## Fluxo de Pagamento
 
-Todos os uploads vão para o bucket `uploads` (público) no Supabase.  
-O serviço central é `server/src/services/storage.service.js`:
-
-```js
-uploadFile(buffer, filename, mimetype)  → retorna URL pública absoluta
-deleteFile(urlOrPath)                   → remove do bucket pelo nome do arquivo
 ```
-
-Convenção de nomes de arquivo:
-- `item_{id}.{ext}` → imagem de prato
-- `artista_{id}.{ext}` → foto de artista
-- `fundo.{ext}` → imagem de fundo do tema
-- `planta.{ext}` → planta do restaurante (URL salva em `Configuracao.planta_url`)
-
-Em desenvolvimento sem Supabase configurado, uploads são salvos em `server/uploads/` (disco local).
+1. Checkout → escolha Pix/Cartão/Dinheiro
+2. POST /pedidos → cria pedido
+3. POST /pagamentos → cria pagamento
+   - PIX: backend gera payload EMV CRC16 + QR base64
+   - CARTÃO/DINHEIRO: tipo=GARCOM
+4. PIX: exibe QR + "Copia e cola"
+5. Admin confirma em /dashboard/pagamentos
+```
 
 ---
 
@@ -298,16 +410,19 @@ Em desenvolvimento sem Supabase configurado, uploads são salvos em `server/uplo
 
 | Regra | Detalhe |
 |---|---|
-| `services/api.js` | SEMPRE usar instância Axios com interceptor. `axios` direto não envia JWT → 401 |
-| baseURL | `API_URL` já inclui `/api`. Não duplicar nas chamadas |
-| `imagemUrl` | Campo é `imagemUrl` (camelCase). Supabase retorna URL absoluta |
-| `prisma generate` | Rodar após qualquer alteração no schema |
-| Boolean no Zod | Enviar `Boolean(form.ativo)` — Zod 4 rejeita string `"true"` |
-| FK constraints | Deletar dependentes antes do pai (PedidoItem → MenuItem, etc.) |
-| `toDateTime()` | Input `type="date"` retorna `"YYYY-MM-DD"` — converter para ISO antes de salvar |
+| `services/api.js` | SEMPRE usar instância Axios com interceptor. `axios` direto → 401 |
+| `API_URL` | Já inclui `/api`. Não duplicar nas chamadas |
+| `imagemUrl` | Sempre `startsWith('http')` antes de prefixar |
+| `lib/prisma.js` | Único ponto de instância do PrismaClient. Nunca criar outro |
+| `statement_cache_size=0` | Obrigatório na DATABASE_URL com PgBouncer |
+| `relationMode = "prisma"` | Obrigatório no schema.prisma com PgBouncer |
+| `Boolean no Zod` | Enviar `Boolean(form.ativo)` — Zod 4 rejeita string `"true"` |
+| FK constraints | Deletar dependentes antes do pai |
+| `toDateTime()` | Input `type="date"` retorna `"YYYY-MM-DD"` — converter para ISO |
 | `/historico` | Rota específica deve vir antes de `/:id` em `pedido.routes.js` |
-| Avaliação show | `@@unique([showId, userId])` — upsert com `createOrUpdate` |
-| Confirmação Pix | Manual pelo admin em `/dashboard/pagamentos`. Sem webhook automático |
+| Avaliação show | `@@unique([showId, userId])` — upsert com createOrUpdate |
+| Confirmação Pix | Manual pelo admin. Sem webhook automático |
+| Enum no banco | Adicionar valor via SQL: `ALTER TYPE "Role" ADD VALUE '...'` |
 
 ---
 
@@ -315,7 +430,7 @@ Em desenvolvimento sem Supabase configurado, uploads são salvos em `server/uplo
 
 ### server/.env
 ```env
-DATABASE_URL=postgresql://postgres.xxx:senha@aws-xxx.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.xxx:senha@aws-xxx.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1&statement_cache_size=0
 JWT_SECRET=<32+ chars hex>
 PORT=3001
 NODE_ENV=development
@@ -341,94 +456,21 @@ VITE_API_BASE_URL=http://localhost:3001
 cd client && npm run dev          # http://localhost:5173
 cd server && npm run dev          # http://localhost:3001 (nodemon)
 
-# Build (verificar antes de publicar)
+# Build
 cd client && npm run build
 
 # Banco
-cd server && npx prisma migrate dev --name nome
 cd server && npx prisma generate
 cd server && npx prisma studio
-cd server && npx prisma db push   # sync direto sem migration (cuidado!)
+cd server && npx prisma migrate dev --name nome
+# NÃO usar db push para ENUMs com PgBouncer — usar SQL direto no Supabase
 
-# Utilitários de setup
+# Setup
 cd server && node criar-admin.js
 cd server && node criar-mesas.js
-```
 
----
-
-## Socket.io — Salas e Eventos
-
-```
-Salas:
-  cozinha          — admin/cozinheiro
-  mesa_{numero}    — cliente daquela mesa
-
-Eventos emitidos pelo servidor:
-  pedido_novo         → sala cozinha  (pedido criado)
-  pedido_atualizado   → sala cozinha  (status mudou)
-  status_atualizado   → sala mesa_X   (payload: { pedidoId, status })
-```
-
----
-
-## CSS Variables de Referência
-
-```css
-/* Marca */
---brand, --brand-light, --brand-dark
-
-/* Superfícies */
---surface, --card, --border, --border-strong
-
-/* Tipografia */
---text-primary, --text-secondary, --text-hint
-
-/* Semânticas */
---success, --success-bg
---warning, --warning-bg
---danger,  --danger-bg
-
-/* Sombras */
---shadow-sm, --shadow-md, --shadow-lg
-```
-
-Aplicadas via `data-theme="light"` ou `data-theme="dark"` no `<html>`.  
-Customizadas via `ThemeContext` com valores salvos na tabela `Configuracao`.
-
----
-
-## Fluxo de Pagamento
-
-```
-1. Cliente finaliza carrinho → /cliente/:mesa/checkout
-2. Escolhe: PIX | CARTÃO | DINHEIRO
-3. POST /pedidos → cria pedido
-4. POST /pagamentos → cria pagamento
-   - PIX: backend gera payload EMV CRC16 + QR base64
-   - CARTÃO/DINHEIRO: tipo=GARCOM, instrução "chame o garçom"
-5. PIX: exibe QR Code + "Copiar código" → "Já paguei"
-   Admin confirma em /dashboard/pagamentos
-6. CARTÃO/DINHEIRO: navega direto para /pedido/:id
-```
-
----
-
-## Fluxo de Shows e Avaliações
-
-```
-Admin cria show em ShowsAdmin → víncula artista → define data/horário
-  ↓
-Show aparece na LandingPage (grid) e no CalendarioShows (cliente)
-Show futuro aparece no slide de Shows no MenuTV
-  ↓
-Show ocorre → passa a ser "passado"
-  ↓
-Cliente acessa CalendarioShows → botão "Avaliar" inline (nota 1-5 + comentário)
-POST /shows/:id/avaliar (upsert)
-  ↓
-Admin acessa ShowsAdmin → botão "Métricas" → ShowMetricas
-Exibe: nota média, distribuição, pedidos no dia vs média 7d, comentários
+# Promover para ADMINSF (SQL Editor Supabase ou Prisma Studio)
+UPDATE "User" SET role = 'ADMINSF' WHERE email = 'email@exemplo.com';
 ```
 
 ---
@@ -436,6 +478,7 @@ Exibe: nota média, distribuição, pedidos no dia vs média 7d, comentários
 ## Credenciais de Desenvolvimento
 
 ```
-Admin:    admin@restaurante.com / admin123
-Clientes: cadastrar via /register ou UsuariosAdmin
+Admin:   admin@restaurante.com / admin123  (role: ADMIN)
+Cliente: cadastrar via /register ou UsuariosAdmin
+ADMINSF: promover via SQL após criar o usuário
 ```
