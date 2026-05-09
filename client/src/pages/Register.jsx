@@ -97,7 +97,7 @@ export default function Register() {
 
               {erro && (
                 <p className="text-xs text-center py-2 rounded-lg"
-                   style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                   style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>
                   {erro}
                 </p>
               )}

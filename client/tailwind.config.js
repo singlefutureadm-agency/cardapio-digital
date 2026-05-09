@@ -4,13 +4,14 @@ export default {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#C8520A',
-          light: '#FDF0E8',
-          dark: '#9C3D06',
+          DEFAULT: 'var(--brand)',
+          light:   'var(--brand-light)',
+          dark:    'var(--brand-dark)',
         },
-        surface: '#FAFAF8',
-        card: '#FFFFFF',
-        border: '#ECECEA',
+        surface: 'var(--surface)',
+        card:    'var(--card)',
+        panel:   'var(--panel)',
+        border:  'var(--border)',
       },
       fontFamily: {
         sans: ['DM Sans', 'sans-serif'],
