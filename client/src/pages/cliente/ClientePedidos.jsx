@@ -25,7 +25,11 @@ export default function ClientePedidos() {
   useEffect(() => {
     api.get('/cliente/pedidos').then(({ data }) => {
       setPedidos(
-        data.filter(p => p.mesa === mesa && new Date(p.createdAt).toDateString() === hoje())
+        data.filter(p =>
+          p.mesa === mesa &&
+          new Date(p.createdAt).toDateString() === hoje() &&
+          p.pagamento?.status !== 'PAGO'
+        )
       )
       setLoading(false)
     })
