@@ -3,127 +3,136 @@ import api from '../services/api'
 import usePedidoStore from '../store/usePedidoStore'
 
 const ACAO = {
-  NOVO: { label: 'Iniciar preparo', status: 'PREPARANDO', cor: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-  PREPARANDO: { label: 'Marcar como pronto', status: 'PRONTO', cor: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  PRONTO: { label: 'Confirmar entrega', status: 'ENTREGUE', cor: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+  NOVO:       { label: 'Iniciar preparo',    proxStatus: 'PREPARANDO', cor: 'var(--warning)', bg: 'var(--warning-bg)'   },
+  PREPARANDO: { label: 'Marcar como pronto', proxStatus: 'PRONTO',     cor: 'var(--success)', bg: 'var(--success-bg)'   },
+  PRONTO:     { label: 'Confirmar entrega',  proxStatus: 'ENTREGUE',   cor: 'var(--text-hint)', bg: 'var(--surface)'    },
 }
 
 export default function PedidoCard({ pedido, agora }) {
   const { removerSeEntregue } = usePedidoStore()
   const [atualizando, setAtualizando] = useState(false)
 
-  const acao = ACAO[pedido.status]
-  const minutos = Math.floor((agora - new Date(pedido.createdAt).getTime()) / 60000)
-  const urgente = minutos >= 20
-  const atrasado = minutos >= 10 && minutos < 20
+  const acao    = ACAO[pedido.status]
+  const min     = Math.floor((agora - new Date(pedido.createdAt).getTime()) / 60000)
+  const urgente  = min >= 20
+  const atrasado = min >= 10 && min < 20
+
+  const timerStyle = urgente
+    ? { background: 'var(--danger-bg)',  color: 'var(--danger)'  }
+    : atrasado
+    ? { background: 'var(--warning-bg)', color: 'var(--warning)' }
+    : { background: 'var(--success-bg)', color: 'var(--success)' }
+
+  const borderStyle = urgente
+    ? { border: '2px solid var(--danger)',  boxShadow: '0 0 0 3px var(--danger-bg)'  }
+    : atrasado
+    ? { border: '2px solid var(--warning)', boxShadow: '0 0 0 3px var(--warning-bg)' }
+    : { border: '1px solid var(--border)',  boxShadow: 'none' }
 
   const avancar = async () => {
-    if (!acao) return
+    if (!acao || atualizando) return
     setAtualizando(true)
     try {
-      const { data } = await api.patch(`/pedidos/${pedido.id}/status`, { status: acao.status })
+      const { data } = await api.patch(`/pedidos/${pedido.id}/status`, { status: acao.proxStatus })
       removerSeEntregue(data)
-    } finally {
-      setAtualizando(false)
-    }
+    } finally { setAtualizando(false) }
   }
 
   const cancelar = async () => {
-    if (!confirm(`Cancelar pedido #${pedido.id}?`)) return
+    if (!confirm(`Cancelar pedido #${pedido.id} — Mesa ${pedido.mesa}?`)) return
     setAtualizando(true)
     try {
       const { data } = await api.patch(`/pedidos/${pedido.id}/status`, { status: 'CANCELADO' })
       removerSeEntregue(data)
-    } finally {
-      setAtualizando(false)
-    }
+    } finally { setAtualizando(false) }
   }
 
   return (
-    <div
-      className="rounded-2xl p-4 space-y-3"
-      style={{
-        background: '#1A1A17',
-        border: urgente
-          ? '1px solid rgba(239,68,68,0.4)'
-          : '1px solid #2A2A26',
-      }}
-    >
-      {/* Cabeçalho */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className="font-display text-base font-medium" style={{ color: '#F5F4F0' }}>
+    <div className="rounded-xl overflow-hidden transition-all"
+         style={{ background: 'var(--card)', ...borderStyle }}>
+
+      {/* ── Header do card ── */}
+      <div className="flex items-center justify-between px-3.5 py-2.5"
+           style={{
+             background: urgente ? 'var(--danger-bg)' : atrasado ? 'var(--warning-bg)' : 'var(--surface)',
+             borderBottom: '1px solid var(--border)',
+           }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-bold text-base leading-tight" style={{ color: 'var(--text-primary)' }}>
             Mesa {pedido.mesa}
           </span>
-          <span className="text-xs ml-2" style={{ color: '#6B6B60' }}>
+          <span className="text-xs font-medium" style={{ color: 'var(--text-hint)' }}>
             #{pedido.id}
           </span>
-        </div>
-
-        <span
-          className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-          style={
-            urgente
-              ? { background: 'rgba(239,68,68,0.15)', color: '#F87171' }
-              : atrasado
-              ? { background: 'rgba(245,158,11,0.15)', color: '#FCD34D' }
-              : { background: 'rgba(16,185,129,0.1)', color: '#6EE7B7' }
-          }
-        >
-          {minutos}min
-        </span>
-      </div>
-
-      {/* Itens */}
-      <ul className="space-y-1.5">
-        {pedido.itens.map((item) => (
-          <li key={item.id} className="text-sm flex items-start gap-2">
-            <span className="font-semibold flex-shrink-0" style={{ color: '#C8520A' }}>
-              {item.quantidade}×
+          {urgente && (
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-md"
+                  style={{ background: 'var(--danger)', color: '#fff', fontSize: 10 }}>
+              URGENTE
             </span>
-            <span style={{ color: '#D4D4CC' }}>
-              {item.menuItem.nome}
-              {item.observacao && (
-                <span className="ml-1 text-xs" style={{ color: '#F59E0B' }}>
-                  ⚠ {item.observacao}
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {/* Info pagamento */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs" style={{ color: '#4A4A46' }}>
-          {pedido.pagamento?.tipo === 'ONLINE' ? '💳 Pago online' : '🧾 Com garçom'}
-        </span>
-      </div>
-
-      {/* Ações */}
-      {acao && (
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={avancar}
-            disabled={atualizando}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
-            style={{ background: acao.bg, color: acao.cor, border: `1px solid ${acao.cor}33` }}
-          >
-            {atualizando ? '...' : acao.label}
-          </button>
-
-          {pedido.status === 'NOVO' && (
-            <button
-              onClick={cancelar}
-              disabled={atualizando}
-              className="w-10 flex items-center justify-center rounded-xl text-sm transition-all disabled:opacity-40"
-              style={{ background: 'rgba(239,68,68,0.1)', color: '#F87171', border: '1px solid rgba(239,68,68,0.2)' }}
-            >
-              ✕
-            </button>
           )}
         </div>
-      )}
+
+        {/* Timer */}
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={timerStyle}>
+          {min}min
+        </span>
+      </div>
+
+      {/* ── Itens ── */}
+      <div className="px-3.5 py-3 space-y-2">
+        {pedido.itens.map((item) => (
+          <div key={item.id} className="flex items-start gap-2">
+            {/* Quantidade badge */}
+            <span className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold mt-0.5"
+                  style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}>
+              {item.quantidade}
+            </span>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
+                {item.menuItem.nome}
+              </p>
+              {item.observacao && (
+                <p className="text-xs mt-0.5 font-medium" style={{ color: 'var(--warning)' }}>
+                  ⚠ {item.observacao}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Rodapé: hora + ações ── */}
+      <div className="px-3.5 pb-3 flex items-center gap-2"
+           style={{ borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+        <span className="text-xs flex-1" style={{ color: 'var(--text-hint)' }}>
+          {new Date(pedido.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+
+        {acao && (
+          <>
+            <button
+              onClick={avancar}
+              disabled={atualizando}
+              className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-40"
+              style={{ background: acao.bg, color: acao.cor, border: `1px solid ${acao.cor}55` }}
+            >
+              {atualizando ? '...' : acao.label}
+            </button>
+
+            {pedido.status === 'NOVO' && (
+              <button
+                onClick={cancelar}
+                disabled={atualizando}
+                className="w-9 h-9 flex items-center justify-center rounded-xl text-sm transition-all disabled:opacity-40 flex-shrink-0"
+                style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger)44' }}
+              >
+                ✕
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
