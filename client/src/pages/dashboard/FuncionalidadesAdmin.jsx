@@ -26,6 +26,12 @@ const FEATURES = [
     titulo: 'Mesas',
     descricao: 'Mapa de mesas drag-and-drop e gestão de layout do restaurante. Aparece no dashboard e na seleção de mesa do cliente.',
   },
+  {
+    key: 'pix',
+    icon: '📱',
+    titulo: 'Pagamento Pix',
+    descricao: 'Exibe a opção de pagamento via Pix no checkout do cliente. Quando desativado, apenas Cartão e Dinheiro ficam disponíveis como formas de pagamento.',
+  },
 ]
 
 function Toggle({ ativo, onChange, salvando }) {

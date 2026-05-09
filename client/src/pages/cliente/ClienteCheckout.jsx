@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
-import useCarrinhoStore from '../../store/useCarrinhoStore'; // ← store sem "s"
+import useCarrinhoStore from '../../store/useCarrinhoStore';
+import { useTheme } from '../../context/ThemeContext';
 
-const METODOS = [
+const TODOS_METODOS = [
   { value: 'PIX',      label: 'Pix',      icon: '📱', desc: 'Pague agora com QR Code' },
   { value: 'CARTAO',   label: 'Cartão',   icon: '💳', desc: 'Pague com o garçom' },
   { value: 'DINHEIRO', label: 'Dinheiro', icon: '💵', desc: 'Pague com o garçom' },
@@ -12,11 +13,14 @@ const METODOS = [
 export default function ClienteCheckout() {
   const { mesa } = useParams();
   const navigate = useNavigate();
+  const { features } = useTheme();
   const itens = useCarrinhoStore(s => s.itens);
   const totalValor = useCarrinhoStore(s => s.totalValor);
   const limparCarrinho = useCarrinhoStore(s => s.limparCarrinho);
 
-  const [metodo, setMetodo] = useState('PIX');
+  const METODOS = TODOS_METODOS.filter(m => m.value !== 'PIX' || features.pix);
+
+  const [metodo, setMetodo] = useState(() => features.pix ? 'PIX' : 'CARTAO');
   const [loading, setLoading] = useState(false);
   const [pagamento, setPagamento] = useState(null);
   const [copiado, setCopiado] = useState(false);

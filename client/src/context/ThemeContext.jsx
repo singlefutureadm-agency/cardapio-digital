@@ -207,6 +207,7 @@ export function ThemeProvider({ children }) {
     menutv:       config.feature_menutv       !== '0',
     preferencias: config.feature_preferencias !== '0',
     mesas:        config.feature_mesas        !== '0',
+    pix:          config.feature_pix          !== '0',
   }
 
   return (
