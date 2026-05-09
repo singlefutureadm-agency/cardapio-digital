@@ -9,6 +9,7 @@ const NAV = [
   { to: (mesa) => `/cliente/${mesa}`,           label: 'Início',    icon: '🏠', end: true },
   { to: (mesa) => `/cliente/${mesa}/cardapio`,  label: 'Cardápio',  icon: '🍽️' },
   { to: (mesa) => `/cliente/${mesa}/pedidos`,   label: 'Pedidos',   icon: '📋' },
+  { to: (mesa) => `/cliente/${mesa}/checkout`,  label: 'Garçom',    icon: '🛎️' },
   { to: (mesa) => `/cliente/${mesa}/perfil`,    label: 'Perfil',    icon: '👤' },
 ]
 
