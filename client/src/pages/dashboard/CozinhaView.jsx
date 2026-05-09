@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import socket from '../../services/socket'
 import api from '../../services/api'
 import usePedidoStore from '../../store/usePedidoStore'
@@ -41,10 +42,10 @@ function tempoRelativo(iso) {
 
 export default function CozinhaView() {
   const { pedidos, loading, carregar, adicionarPedido, removerSeEntregue } = usePedidoStore()
+  const navigate                      = useNavigate()
   const [filtroMesa, setFiltroMesa]   = useState('')
   const [agora, setAgora]             = useState(Date.now())
   const [chamadas, setChamadas]       = useState([])
-  const [atendendo, setAtendendo]     = useState(null)
   const [toast, setToast]             = useState(null)
   const toastRef                      = useRef(null)
 
@@ -100,14 +101,6 @@ export default function CozinhaView() {
       clearTimeout(toastRef.current)
     }
   }, [])
-
-  const atender = async (id) => {
-    setAtendendo(id)
-    try {
-      await api.patch(`/chamadas/${id}`)
-      setChamadas(prev => prev.filter(c => c.id !== id))
-    } catch {} finally { setAtendendo(null) }
-  }
 
   const filtrados  = pedidos.filter(p =>
     filtroMesa ? p.mesa.toLowerCase().includes(filtroMesa.toLowerCase()) : true
@@ -223,16 +216,11 @@ export default function CozinhaView() {
                 </div>
 
                 <button
-                  onClick={() => atender(c.id)}
-                  disabled={atendendo === c.id}
+                  onClick={() => navigate('/dashboard/pagamentos')}
                   className="rounded-xl px-5 py-2.5 text-sm font-bold transition-all active:scale-[0.96] flex-shrink-0"
-                  style={{
-                    background: atendendo === c.id ? 'var(--border)' : 'var(--warning)',
-                    color: '#fff',
-                    cursor: atendendo === c.id ? 'wait' : 'pointer',
-                  }}
+                  style={{ background: 'var(--warning)', color: '#fff' }}
                 >
-                  {atendendo === c.id ? '...' : '✓ Atender'}
+                  🧾 Fechar conta
                 </button>
               </div>
             ))}

@@ -2,11 +2,16 @@ const pedidoService = require('../services/pedido.service')
 
 const criar = async (req, res, next) => {
   try {
-    const pedido = await pedidoService.criarPedido({
+    const { pedido, isNovo } = await pedidoService.criarPedido({
       ...req.body,
       userId: req.user.id,
     })
-    req.app.get('io').to('cozinha').emit('pedido_novo', pedido)
+    const io = req.app.get('io')
+    if (isNovo) {
+      io.to('cozinha').emit('pedido_novo', pedido)
+    } else {
+      io.to('cozinha').emit('pedido_atualizado', pedido)
+    }
     res.status(201).json(pedido)
   } catch (error) {
     next(error)

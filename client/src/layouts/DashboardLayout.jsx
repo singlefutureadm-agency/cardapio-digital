@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import ThemeToggle from '../components/ThemeToggle'
 import SFFooter from '../components/SFFooter'
+import api from '../services/api'
+import socket from '../services/socket'
 
-function buildNav(role, features) {
+function buildNav(role, features, pendingCount) {
   const isSF = role === 'ADMINSF'
 
   const restauranteFilhos = [
@@ -56,7 +58,7 @@ function buildNav(role, features) {
     nav.push({ to: '/dashboard/configuracoes', label: 'Configurações', icon: '⚙️' })
   }
 
-  nav.push({ to: '/dashboard/pagamentos', label: 'Pagamentos', icon: '💳' })
+  nav.push({ to: '/dashboard/pagamentos', label: 'Fechar Conta', icon: '🧾', badge: pendingCount })
 
   return nav
 }
@@ -169,9 +171,26 @@ export default function DashboardLayout() {
   const { user, logout } = useAuth()
   const { isDark, glass, bgUrl, features } = useTheme()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
+  const location = useLocation()
+  const [collapsed, setCollapsed]       = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
 
-  const NAV = buildNav(user?.role, features)
+  // Atualiza badge ao navegar
+  useEffect(() => {
+    api.get('/chamadas').then(({ data }) => setPendingCount(data.length)).catch(() => {})
+  }, [location.pathname])
+
+  // Atualiza badge em tempo real via socket
+  useEffect(() => {
+    socket.on('garcom_chamado',   ()  => setPendingCount(n => n + 1))
+    socket.on('chamada_atendida', ()  => setPendingCount(n => Math.max(0, n - 1)))
+    return () => {
+      socket.off('garcom_chamado')
+      socket.off('chamada_atendida')
+    }
+  }, [])
+
+  const NAV = buildNav(user?.role, features, pendingCount)
 
   const sidebarStyle = glass ? {
     background: 'var(--glass-bg)',
@@ -248,7 +267,17 @@ export default function DashboardLayout() {
                 }}
               >
                 <span className="text-base flex-shrink-0">{item.icon}</span>
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1">{item.label}</span>
+                    {item.badge > 0 && (
+                      <span className="flex-shrink-0 font-bold rounded-full"
+                            style={{ background: 'var(--warning)', color: '#fff', fontSize: 10, padding: '1px 6px' }}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
               </NavLink>
             )
           })}

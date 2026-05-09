@@ -47,4 +47,27 @@ router.patch('/:id/confirmar', authMiddleware, isAdmin, async (req, res, next) =
   }
 });
 
+// Admin — lista mesas abertas (chamadas pendentes + pedidos do dia)
+router.get('/fechar-conta', authMiddleware, isAdmin, async (req, res, next) => {
+  try {
+    const mesas = await svc.listarMesasAbertas();
+    res.json(mesas);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Admin — fecha a conta de uma mesa (confirma pagamentos + marca chamadas atendidas)
+router.post('/fechar-mesa', authMiddleware, isAdmin, async (req, res, next) => {
+  try {
+    const { mesa, metodo } = req.body;
+    if (!mesa || !metodo) return res.status(400).json({ error: 'mesa e metodo são obrigatórios' });
+    const io = req.app.get('io');
+    const resultado = await svc.fecharMesa(mesa, metodo, io);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -17,12 +17,39 @@ const criarPedido = async ({ mesa, itens, userId }) => {
     }
   })
 
-  const total = itensComPreco.reduce((acc, i) => acc + i.subtotal, 0)
+  const totalNovos = itensComPreco.reduce((acc, i) => acc + i.subtotal, 0)
+
+  // Se já existe um pedido NOVO para esta mesa hoje, adiciona os itens nele
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  const pedidoAberto = await prisma.pedido.findFirst({
+    where: { mesa, status: 'NOVO', createdAt: { gte: hoje } },
+  })
+
+  if (pedidoAberto) {
+    const pedido = await prisma.pedido.update({
+      where: { id: pedidoAberto.id },
+      data: {
+        total: Number(pedidoAberto.total) + totalNovos,
+        itens: {
+          create: itensComPreco.map((i) => ({
+            menuItemId: i.menuItemId,
+            quantidade: i.quantidade,
+            observacao: i.observacao,
+            subtotal: i.subtotal,
+          })),
+        },
+      },
+      include: { itens: { include: { menuItem: true } } },
+    })
+    return { pedido, isNovo: false }
+  }
 
   const pedido = await prisma.pedido.create({
     data: {
       mesa,
-      total,
+      total: totalNovos,
       userId: userId ?? null,
       itens: {
         create: itensComPreco.map((i) => ({
@@ -33,12 +60,10 @@ const criarPedido = async ({ mesa, itens, userId }) => {
         })),
       },
     },
-    include: {
-      itens: { include: { menuItem: true } },
-    },
+    include: { itens: { include: { menuItem: true } } },
   })
 
-  return pedido
+  return { pedido, isNovo: true }
 }
 
 const buscarPedido = async (id) => {

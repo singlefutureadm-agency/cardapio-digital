@@ -92,4 +92,70 @@ async function listarPendentes() {
   });
 }
 
-module.exports = { criarPagamento, confirmarPagamento, buscarPorPedido, listarPendentes };
+// Retorna mesas com chamada de garçom pendente + seus pedidos do dia
+async function listarMesasAbertas() {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  const chamadas = await prisma.chamadaGarcom.findMany({
+    where: { status: 'PENDENTE' },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  const mesas = []
+  for (const chamada of chamadas) {
+    const pedidos = await prisma.pedido.findMany({
+      where: {
+        mesa: chamada.mesa,
+        createdAt: { gte: hoje },
+        status: { not: 'CANCELADO' },
+      },
+      include: {
+        itens: { include: { menuItem: { select: { nome: true } } } },
+        pagamento: { select: { id: true, status: true, metodo: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    const totalMesa = pedidos.reduce((acc, p) => acc + Number(p.total), 0)
+
+    mesas.push({ mesa: chamada.mesa, chamada, pedidos, totalMesa })
+  }
+
+  return mesas
+}
+
+// Fecha a conta de uma mesa: cria/atualiza pagamentos e marca chamadas como atendido
+async function fecharMesa(mesa, metodo, io) {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  const pedidos = await prisma.pedido.findMany({
+    where: { mesa, createdAt: { gte: hoje }, status: { not: 'CANCELADO' } },
+  })
+
+  for (const pedido of pedidos) {
+    await prisma.pagamento.upsert({
+      where: { pedidoId: pedido.id },
+      update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
+      create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
+    })
+  }
+
+  const chamadas = await prisma.chamadaGarcom.findMany({
+    where: { mesa, status: 'PENDENTE' },
+  })
+
+  for (const c of chamadas) {
+    await prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })
+    if (io) io.to('cozinha').emit('chamada_atendida', { id: c.id })
+  }
+
+  return {
+    mesa,
+    pedidosFechados: pedidos.length,
+    total: pedidos.reduce((acc, p) => acc + Number(p.total), 0),
+  }
+}
+
+module.exports = { criarPagamento, confirmarPagamento, buscarPorPedido, listarPendentes, listarMesasAbertas, fecharMesa };
