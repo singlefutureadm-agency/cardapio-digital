@@ -92,7 +92,7 @@ export default function ClientePedidos() {
             Adicione itens ao carrinho e envie para a cozinha
           </p>
           <button
-            onClick={() => navigate('cardapio')}
+            onClick={() => navigate('../cardapio')}
             className="mt-2 px-6 py-3 rounded-xl text-sm font-semibold"
             style={{ background: 'var(--brand)', color: '#fff' }}
           >
@@ -177,7 +177,7 @@ export default function ClientePedidos() {
 
           {/* Pedir mais */}
           <button
-            onClick={() => navigate('cardapio')}
+            onClick={() => navigate('../cardapio')}
             className="w-full rounded-2xl py-3.5 text-sm font-semibold transition-all active:scale-[0.98]"
             style={{ background: 'var(--surface)', border: '1.5px dashed var(--border)', color: 'var(--text-secondary)' }}
           >
@@ -198,7 +198,7 @@ export default function ClientePedidos() {
           </p>
         </div>
         <button
-          onClick={() => navigate('checkout')}
+          onClick={() => navigate('../checkout')}
           className="w-full py-4 font-bold text-base transition-all active:scale-[0.98] no-glass"
           style={{ background: 'var(--warning)', color: '#fff' }}
         >
