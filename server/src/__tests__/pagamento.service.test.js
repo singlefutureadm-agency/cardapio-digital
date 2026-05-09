@@ -92,6 +92,26 @@ describe('listarMesasAbertas', () => {
     expect(resultado[0].totalMesa).toBeCloseTo(68.90, 2)
   })
 
+  test('exclui pedidos de sessões anteriores (pagamento PAGO)', async () => {
+    const chamadas = [{ id: 6, mesa: '3', status: 'PENDENTE', createdAt: new Date() }]
+    const pedidos  = [
+      // sessão anterior — pago
+      { id: 9,  mesa: '3', total: '37.80', status: 'ENTREGUE', itens: [], pagamento: { status: 'PAGO' } },
+      { id: 13, mesa: '3', total: '18.90', status: 'ENTREGUE', itens: [], pagamento: { status: 'PAGO' } },
+      // sessão atual — sem pagamento
+      { id: 18, mesa: '3', total: '42.90', status: 'NOVO',     itens: [], pagamento: null },
+    ]
+
+    prisma.chamadaGarcom.findMany.mockResolvedValue(chamadas)
+    prisma.pedido.findMany.mockResolvedValue(pedidos)
+
+    const resultado = await listarMesasAbertas()
+
+    expect(resultado[0].pedidos).toHaveLength(1)
+    expect(resultado[0].pedidos[0].id).toBe(18)
+    expect(resultado[0].totalMesa).toBeCloseTo(42.90, 2)
+  })
+
   test('retorna lista vazia quando não há chamadas pendentes', async () => {
     prisma.chamadaGarcom.findMany.mockResolvedValue([])
 

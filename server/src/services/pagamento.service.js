@@ -104,7 +104,7 @@ async function listarMesasAbertas() {
 
   const mesas = []
   for (const chamada of chamadas) {
-    const pedidos = await prisma.pedido.findMany({
+    const todosPedidos = await prisma.pedido.findMany({
       where: {
         mesa: chamada.mesa,
         createdAt: { gte: hoje },
@@ -117,6 +117,8 @@ async function listarMesasAbertas() {
       orderBy: { createdAt: 'asc' },
     })
 
+    // Exibe apenas pedidos da sessão atual (sem pagamento ou ainda não PAGO)
+    const pedidos = todosPedidos.filter(p => p.pagamento?.status !== 'PAGO')
     const totalMesa = pedidos.reduce((acc, p) => acc + Number(p.total), 0)
 
     mesas.push({ mesa: chamada.mesa, chamada, pedidos, totalMesa })
