@@ -47,6 +47,7 @@
 
   --surface:        #0F0F0D;
   --card:           #1A1A17;
+  --panel:          #262624;
   --border:         #2A2A26;
   --border-strong:  #3A3A36;
 
@@ -72,11 +73,11 @@
 
 /* ── Glass mode — aplica nas áreas de dashboard e cliente ── */
 
-/* Cards e painéis (div com rounded-2xl/3xl) */
-html[data-glass="true"] .app-dashboard div.rounded-2xl,
-html[data-glass="true"] .app-dashboard div.rounded-3xl,
-html[data-glass="true"] .app-cliente  div.rounded-2xl,
-html[data-glass="true"] .app-cliente  div.rounded-3xl {
+/* Cards e painéis — div e button com rounded-2xl/3xl; .no-glass isenta o elemento */
+html[data-glass="true"] .app-dashboard :is(div, button, form, section).rounded-2xl:not(.no-glass),
+html[data-glass="true"] .app-dashboard :is(div, button, form, section).rounded-3xl:not(.no-glass),
+html[data-glass="true"] .app-cliente   :is(div, button, form, section).rounded-2xl:not(.no-glass),
+html[data-glass="true"] .app-cliente   :is(div, button, form, section).rounded-3xl:not(.no-glass) {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur) !important;
   -webkit-backdrop-filter: var(--glass-blur) !important;

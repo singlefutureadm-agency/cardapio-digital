@@ -25,7 +25,7 @@ export default function ClienteHome() {
     <div ref={ref} className="space-y-4 pt-2">
 
       {/* Saudação */}
-      <div className="rounded-3xl p-6"
+      <div className="rounded-3xl p-6 no-glass"
            style={{ background: 'var(--brand)', position: 'relative', overflow: 'hidden' }}>
         <div className="absolute inset-0 pointer-events-none"
              style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',

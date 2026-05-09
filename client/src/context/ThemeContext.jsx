@@ -145,17 +145,17 @@ export function ThemeProvider({ children }) {
     const modo = localStorage.getItem('theme') ||
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
+    // Aplica o tema imediatamente (sem customizações) para evitar flash de light mode
+    document.documentElement.setAttribute('data-theme', modo)
+    aplicarTheme(buildTheme(modo, {}))
+
     api.get('/configuracoes')
       .then(({ data }) => {
         setConfig(data)
-        document.documentElement.setAttribute('data-theme', modo)
         aplicarTheme(buildTheme(modo, data))
         aplicarGlass(data.glass_enabled === 'true', data)
       })
-      .catch(() => {
-        document.documentElement.setAttribute('data-theme', modo)
-        aplicarTheme(buildTheme(modo, {}))
-      })
+      .catch(() => {})
       .finally(() => setCarregando(false))
   }, [])
 

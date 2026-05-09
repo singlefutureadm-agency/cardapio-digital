@@ -118,7 +118,7 @@ export default function ClienteCardapio() {
       {totalItens() > 0 && (
         <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-30">
           <button onClick={() => navigate(`/cliente/${mesa}/carrinho`)}
-                  className="w-full max-w-lg rounded-2xl px-5 py-4 flex items-center justify-between transition-all active:scale-[0.98]"
+                  className="w-full max-w-lg rounded-2xl px-5 py-4 flex items-center justify-between transition-all active:scale-[0.98] no-glass"
                   style={{ background: 'var(--text-primary)', color: '#fff',
                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
             <span className="text-sm font-medium px-2.5 py-1 rounded-lg"
