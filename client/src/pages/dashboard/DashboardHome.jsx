@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import socket from '../../services/socket'
+
+const METODO_LABEL = { PIX: 'Pix 📱', CARTAO: 'Cartão 💳', DINHEIRO: 'Dinheiro 💵' }
+
+function tempoRelativo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso)) / 1000)
+  if (diff < 60) return `${diff}s atrás`
+  if (diff < 3600) return `${Math.floor(diff / 60)}min atrás`
+  return `${Math.floor(diff / 3600)}h atrás`
+}
 
 export default function DashboardHome() {
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
+  const [chamadas, setChamadas] = useState([])
+  const [atendendo, setAtendendo] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -20,7 +32,43 @@ export default function DashboardHome() {
         itensCadapio: menu.data.length,
       })
     })
+
+    api.get('/chamadas').then(({ data }) => setChamadas(data)).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    socket.connect()
+    socket.emit('entrar_cozinha')
+
+    socket.on('garcom_chamado', (chamada) => {
+      setChamadas(prev => [chamada, ...prev])
+      if (Notification.permission === 'granted') {
+        new Notification('🛎️ Garçom chamado!', { body: `Mesa ${chamada.mesa} · ${METODO_LABEL[chamada.metodo] ?? chamada.metodo}` })
+      }
+    })
+
+    socket.on('chamada_atendida', ({ id }) => {
+      setChamadas(prev => prev.filter(c => c.id !== id))
+    })
+
+    return () => {
+      socket.off('garcom_chamado')
+      socket.off('chamada_atendida')
+      socket.disconnect()
+    }
+  }, [])
+
+  const atender = async (id) => {
+    setAtendendo(id)
+    try {
+      await api.patch(`/chamadas/${id}`)
+      setChamadas(prev => prev.filter(c => c.id !== id))
+    } catch {
+      // silencia — o socket também remove em sucesso
+    } finally {
+      setAtendendo(null)
+    }
+  }
 
   const CARDS = stats ? [
     { label: 'Pedidos em aberto', valor: stats.pedidosAbertos,                                     cor: 'var(--warning)', bg: 'var(--warning-bg)' },
@@ -48,6 +96,51 @@ export default function DashboardHome() {
           Visão geral
         </h1>
       </div>
+
+      {/* ── Chamadas pendentes ── */}
+      {chamadas.length > 0 && (
+        <div className="mb-8 rounded-2xl overflow-hidden"
+             style={{ border: '2px solid var(--warning)', background: 'var(--warning-bg)' }}>
+          <div className="flex items-center gap-3 px-5 py-3"
+               style={{ borderBottom: '1px solid var(--warning)' }}>
+            <span style={{ fontSize: 18 }}>🛎️</span>
+            <p className="font-bold text-sm" style={{ color: 'var(--warning)' }}>
+              Garçom chamado
+            </p>
+            <span className="ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold"
+                  style={{ background: 'var(--warning)', color: '#fff' }}>
+              {chamadas.length}
+            </span>
+          </div>
+          <div className="divide-y" style={{ '--divide-color': 'var(--warning)' }}>
+            {chamadas.map(c => (
+              <div key={c.id} className="flex items-center gap-4 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    Mesa {c.mesa}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    {METODO_LABEL[c.metodo] ?? c.metodo} · {tempoRelativo(c.createdAt)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => atender(c.id)}
+                  disabled={atendendo === c.id}
+                  className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-[0.97]"
+                  style={{
+                    background: atendendo === c.id ? 'var(--border)' : 'var(--warning)',
+                    color: '#fff',
+                    cursor: atendendo === c.id ? 'wait' : 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  {atendendo === c.id ? '...' : 'Atender'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Métricas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -91,7 +184,6 @@ export default function DashboardHome() {
               overflow: 'hidden',
             }}
           >
-            {/* Linha de acento na borda esquerda */}
             <div style={{
               position: 'absolute', left: 0, top: 0, bottom: 0,
               width: 3, background: item.cor, borderRadius: '3px 0 0 3px',

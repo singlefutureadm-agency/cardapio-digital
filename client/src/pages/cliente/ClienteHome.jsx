@@ -43,6 +43,25 @@ export default function ClienteHome() {
         </div>
       </div>
 
+      {/* Chamar Garçom — destaque */}
+      <button
+        onClick={() => navigate('checkout')}
+        className="w-full rounded-2xl p-4 flex items-center gap-4 text-left transition-all hover:scale-[1.01] active:scale-[0.98] no-glass"
+        style={{ background: 'var(--warning-bg)', border: '2px solid var(--warning)' }}
+      >
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+             style={{ background: 'var(--warning)', color: '#fff' }}>
+          🛎️
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm" style={{ color: 'var(--warning)' }}>Chamar Garçom</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            Quando terminar de pedir, chame para finalizar e pagar
+          </p>
+        </div>
+        <span style={{ color: 'var(--warning)', fontSize: 18 }}>→</span>
+      </button>
+
       {/* Ações rápidas */}
       <div className="grid grid-cols-2 gap-3">
         {[

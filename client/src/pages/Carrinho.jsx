@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import api from '../services/api'
 import useCarrinhoStore from '../store/useCarrinhoStore'
 import CarrinhoItem from '../components/CarrinhoItem'
 
@@ -7,9 +9,33 @@ export default function Carrinho() {
   const navigate = useNavigate()
   const location = useLocation()
   const { itens, totalValor, limparCarrinho } = useCarrinhoStore()
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState('')
 
   const isCliente = location.pathname.startsWith('/cliente')
   const base = isCliente ? `/cliente/${mesa}` : `/mesa/${mesa}`
+
+  const enviarParaCozinha = async () => {
+    if (!itens.length || enviando) return
+    setEnviando(true)
+    setErro('')
+    try {
+      await api.post('/pedidos', {
+        mesa,
+        itens: itens.map(i => ({
+          menuItemId: i.id,
+          quantidade: i.quantidade,
+          observacao: i.observacao || '',
+        })),
+      })
+      limparCarrinho()
+      navigate(`${base}/cardapio`)
+    } catch (err) {
+      setErro(err.response?.data?.error || 'Erro ao enviar pedido')
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   if (itens.length === 0) {
     return (
@@ -67,7 +93,6 @@ export default function Carrinho() {
       <div className={isCliente ? 'pt-2' : ''}>
         <main className="max-w-lg mx-auto px-5 pt-5 space-y-3">
 
-          {/* Título dentro do dashboard */}
           {isCliente && (
             <div className="mb-2">
               <p className="text-xs font-semibold uppercase tracking-widest mb-1"
@@ -77,6 +102,9 @@ export default function Carrinho() {
               <h2 className="font-display text-xl font-medium" style={{ color: 'var(--text-primary)' }}>
                 Seu pedido
               </h2>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                Envie para a cozinha e continue pedindo. Chame o garçom quando terminar.
+              </p>
             </div>
           )}
 
@@ -111,12 +139,20 @@ export default function Carrinho() {
            style={{ background: 'var(--card)', borderTop: '1px solid var(--border)',
                     boxShadow: '0 -8px 24px rgba(0,0,0,0.06)' }}>
         <div className="max-w-lg mx-auto flex flex-col gap-2">
+          {erro && (
+            <div className="rounded-xl px-4 py-3 text-sm"
+                 style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>
+              {erro}
+            </div>
+          )}
           <button
-            onClick={() => navigate(`${base}/checkout`)}
+            onClick={enviarParaCozinha}
+            disabled={enviando}
             className="w-full rounded-2xl py-4 font-semibold text-base transition-all active:scale-[0.98]"
-            style={{ background: 'var(--brand)', color: '#fff' }}
+            style={{ background: enviando ? 'var(--border)' : 'var(--brand)', color: '#fff',
+                     cursor: enviando ? 'not-allowed' : 'pointer' }}
           >
-            Confirmar pedido
+            {enviando ? 'Enviando...' : '🍽️ Enviar para a cozinha'}
           </button>
           <button
             onClick={() => { limparCarrinho(); navigate(`${base}/cardapio`) }}

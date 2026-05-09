@@ -215,3 +215,13 @@ model AvaliacaoShow {
 
   @@unique([showId, userId])
 }
+
+model ChamadaGarcom {
+  id        Int             @id @default(autoincrement())
+  mesa      String
+  metodo    MetodoPagamento
+  status    String          @default("PENDENTE")
+  createdAt DateTime        @default(now())
+
+  @@map("chamadas_garcom")
+}

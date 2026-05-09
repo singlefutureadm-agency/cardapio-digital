@@ -18,6 +18,7 @@ const configuracaoRoutes = require('./routes/configuracao.routes')
 const preferenciaRoutes = require('./routes/preferencia.routes')
 const showRoutes        = require('./routes/show.routes')
 const artistaRoutes     = require('./routes/artista.routes')
+const chamadasRoutes    = require('./routes/chamadas.routes')
 
 const app = express()
 
@@ -55,6 +56,7 @@ app.use('/api/configuracoes', configuracaoRoutes)
 app.use('/api/preferencias',  preferenciaRoutes)
 app.use('/api/shows',         showRoutes)
 app.use('/api/artistas',      artistaRoutes)
+app.use('/api/chamadas',      chamadasRoutes)
 
 // Uploads locais (apenas em desenvolvimento)
 if (process.env.NODE_ENV !== 'production') {
