@@ -13,7 +13,7 @@ export default function CarrinhoFlutuante({ mesa }) {
       <button
         onClick={() => navigate(`/mesa/${mesa}/carrinho`)}
         className="w-full max-w-lg rounded-2xl px-5 py-4 flex items-center justify-between transition-all active:scale-[0.98]"
-        style={{ background: 'var(--text-primary)', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
+        style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
       >
         <span
           className="text-sm font-medium px-2.5 py-1 rounded-lg"
@@ -22,7 +22,7 @@ export default function CarrinhoFlutuante({ mesa }) {
           {totalItens} {totalItens === 1 ? 'item' : 'itens'}
         </span>
         <span className="font-semibold tracking-wide">Ver carrinho</span>
-        <span className="font-semibold" style={{ color: '#FFBA88' }}>
+        <span className="font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
           R$ {totalValor.toFixed(2).replace('.', ',')}
         </span>
       </button>
