@@ -29,7 +29,7 @@ export default function Carrinho() {
         })),
       })
       limparCarrinho()
-      navigate(`${base}/cardapio`)
+      navigate(`${base}/pedidos`)
     } catch (err) {
       setErro(err.response?.data?.error || 'Erro ao enviar pedido')
     } finally {
