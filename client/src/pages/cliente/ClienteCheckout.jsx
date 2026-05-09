@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import useCarrinhoStore from '../../store/useCarrinhoStore';
@@ -22,6 +22,10 @@ export default function ClienteCheckout() {
 
   const [metodo, setMetodo] = useState(() => features.pix ? 'PIX' : 'CARTAO');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!features.pix && metodo === 'PIX') setMetodo('CARTAO');
+  }, [features.pix]);
   const [pagamento, setPagamento] = useState(null);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState('');
