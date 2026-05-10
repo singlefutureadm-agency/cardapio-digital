@@ -190,7 +190,7 @@ function AppMockup({ isDark }) {
           <div style={{
             background: 'var(--brand)', borderRadius: 14, padding: '14px 20px',
             textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 14,
-            boxShadow: '0 6px 20px rgba(200,82,10,0.4)',
+            boxShadow: '0 6px 20px color-mix(in srgb, var(--brand) 40%, transparent)',
           }}>
             Fazer pedido &nbsp;→&nbsp; R$ 158,00
           </div>
@@ -294,7 +294,7 @@ function ContatoForm() {
       </div>
       <button type="submit"
               className="w-full py-4 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] group"
-              style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 20px rgba(200,82,10,0.35)', position: 'relative', overflow: 'hidden' }}>
+              style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 20px color-mix(in srgb, var(--brand) 35%, transparent)', position: 'relative', overflow: 'hidden' }}>
         <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }} />
         <span className="relative">Enviar mensagem</span>
@@ -319,16 +319,17 @@ export default function LandingPage() {
   const [scrolled, setScrolled]     = useState(false)
   const [shows, setShows]           = useState([])
 
-  const heroRef       = useRef(null)
-  const sobreRef      = useRef(null)
-  const cardapioRef   = useRef(null)
-  const contatoRef    = useRef(null)
-  const newsletterRef = useRef(null)
-  const difsRef       = useRef(null)
-  const depRef        = useRef(null)
-  const magnetRef     = useRef(null)
-  const showsRef      = useRef(null)
-  const marqueeRef    = useRef(null)
+  const heroRef           = useRef(null)
+  const sobreRef          = useRef(null)
+  const cardapioRef       = useRef(null)
+  const contatoRef        = useRef(null)
+  const newsletterRef     = useRef(null)
+  const difsRef           = useRef(null)
+  const depRef            = useRef(null)
+  const magnetRef         = useRef(null)
+  const showsRef          = useRef(null)
+  const marqueeRef        = useRef(null)
+  const menuScrollFired   = useRef(false)
 
   useEffect(() => {
     api.get('/menu').then(({ data }) => {
@@ -473,12 +474,30 @@ export default function LandingPage() {
     return () => ctx.revert()
   }, [shows])
 
-  /* GSAP — menu cards */
+  /* GSAP — menu cards: scroll na primeira vez, imediato ao trocar aba */
   useEffect(() => {
     if (loading || !cardapioRef.current) return
-    gsap.fromTo('.menu-card',
-      { opacity: 0, y: 28, scale: 0.96 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'power3.out' })
+
+    if (!menuScrollFired.current) {
+      gsap.set('.menu-card', { opacity: 0, y: 48, scale: 0.93 })
+      const st = ScrollTrigger.create({
+        trigger: cardapioRef.current,
+        start: 'top 80%',
+        once: true,
+        onEnter: () => {
+          menuScrollFired.current = true
+          gsap.to('.menu-card', {
+            opacity: 1, y: 0, scale: 1,
+            duration: 0.6, stagger: 0.09, ease: 'power3.out',
+          })
+        },
+      })
+      return () => st.kill()
+    } else {
+      gsap.fromTo('.menu-card',
+        { opacity: 0, y: 24, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.07, ease: 'power3.out' })
+    }
   }, [loading, categoriaAtiva])
 
   const scrollTo = (ref) => {
@@ -552,7 +571,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2.5 cursor-pointer group"
                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all group-hover:rotate-12 group-hover:scale-110 duration-300"
-                 style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 12px rgba(200,82,10,0.4)' }}>
+                 style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent)' }}>
               🍽
             </div>
             <span className="font-display text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -588,7 +607,7 @@ export default function LandingPage() {
                 )}
                 <button onClick={() => navigate((user.role === 'ADMIN' || user.role === 'ADMINSF') ? '/dashboard' : '/cliente/1')}
                         className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:scale-[1.03] active:scale-[0.97]"
-                        style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 16px rgba(200,82,10,0.3)' }}>
+                        style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 16px color-mix(in srgb, var(--brand) 30%, transparent)' }}>
                   Fazer pedido
                 </button>
                 <button onClick={logout} className="text-sm px-3 py-2 rounded-xl"
@@ -605,7 +624,7 @@ export default function LandingPage() {
                 </button>
                 <button onClick={() => navigate('/register')}
                         className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:scale-[1.03] active:scale-[0.97]"
-                        style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 16px rgba(200,82,10,0.3)' }}>
+                        style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 16px color-mix(in srgb, var(--brand) 30%, transparent)' }}>
                   Criar conta
                 </button>
               </>
@@ -674,8 +693,8 @@ export default function LandingPage() {
         <div className="absolute inset-0 pointer-events-none"
              style={{
                background: isDark
-                 ? 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200,82,10,0.06) 0%, transparent 70%)'
-                 : 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200,82,10,0.05) 0%, transparent 70%)',
+                 ? 'radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--brand) 6%, transparent) 0%, transparent 70%)'
+                 : 'radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--brand) 5%, transparent) 0%, transparent 70%)',
              }} />
 
         {/* Orbs */}
@@ -734,8 +753,8 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="hero-badge inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full mb-10"
                style={{
-                 background: isDark ? 'rgba(200,82,10,0.12)' : 'rgba(200,82,10,0.08)',
-                 border: '1px solid rgba(200,82,10,0.25)',
+                 background: isDark ? 'color-mix(in srgb, var(--brand) 12%, transparent)' : 'color-mix(in srgb, var(--brand) 8%, transparent)',
+                 border: '1px solid color-mix(in srgb, var(--brand) 25%, transparent)',
                }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--brand)', boxShadow: '0 0 6px var(--brand)' }} />
             <span className="text-xs font-bold uppercase tracking-widest"
@@ -777,7 +796,7 @@ export default function LandingPage() {
               className="px-10 py-5 rounded-2xl font-bold text-base inline-flex items-center justify-center gap-3 group"
               style={{
                 background: 'var(--brand)', color: '#fff',
-                boxShadow: '0 8px 40px rgba(200,82,10,0.45), 0 2px 0 rgba(255,255,255,0.1) inset',
+                boxShadow: '0 8px 40px color-mix(in srgb, var(--brand) 45%, transparent), 0 2px 0 rgba(255,255,255,0.1) inset',
                 position: 'relative', overflow: 'hidden',
               }}>
               <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -862,7 +881,7 @@ export default function LandingPage() {
                   </span>
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 transition-transform group-hover:scale-110 duration-300"
-                         style={{ background: 'var(--brand-light)', boxShadow: '0 4px 16px rgba(200,82,10,0.15)' }}>
+                         style={{ background: 'var(--brand-light)', boxShadow: '0 4px 16px color-mix(in srgb, var(--brand) 15%, transparent)' }}>
                       {icone}
                     </div>
                     <h3 className="font-bold text-base mb-2.5" style={{ color: 'var(--text-primary)' }}>{titulo}</h3>
@@ -910,7 +929,7 @@ export default function LandingPage() {
               <div className="sobre-stats flex flex-wrap gap-4 pt-2">
                 {[{ n: '14', label: 'anos' }, { n: '3', label: 'chefs' }, { n: '50+', label: 'pratos' }].map(({ n, label }) => (
                   <div key={label} className="sobre-stat px-6 py-4 rounded-2xl transition-transform hover:scale-105 duration-300"
-                       style={{ background: 'var(--brand-light)', border: '1px solid rgba(200,82,10,0.15)', boxShadow: '0 4px 16px rgba(200,82,10,0.08)' }}>
+                       style={{ background: 'var(--brand-light)', border: '1px solid color-mix(in srgb, var(--brand) 15%, transparent)', boxShadow: '0 4px 16px color-mix(in srgb, var(--brand) 8%, transparent)' }}>
                     <p className="font-display text-3xl font-bold" style={{ color: 'var(--brand)' }}>{n}</p>
                     <p className="text-xs mt-0.5 uppercase tracking-wider font-semibold"
                        style={{ color: 'var(--text-secondary)', letterSpacing: '0.1em' }}>{label}</p>
@@ -944,7 +963,7 @@ export default function LandingPage() {
             </div>
             <button onClick={() => navigate(user ? ((user.role === 'ADMIN' || user.role === 'ADMINSF') ? '/dashboard/cardapio' : '/cliente/1/cardapio') : '/login')}
                     className="text-sm font-bold px-5 py-2.5 rounded-xl self-start sm:self-auto transition-all hover:scale-[1.03]"
-                    style={{ background: 'var(--brand-light)', color: 'var(--brand)', border: '1px solid rgba(200,82,10,0.2)' }}>
+                    style={{ background: 'var(--brand-light)', color: 'var(--brand)', border: '1px solid color-mix(in srgb, var(--brand) 20%, transparent)' }}>
               Ver cardápio completo →
             </button>
           </div>
@@ -955,7 +974,7 @@ export default function LandingPage() {
               <button key={cat.id} onClick={() => setCat(cat.id)}
                       className="flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200"
                       style={cat.id === categoriaAtiva
-                        ? { background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 14px rgba(200,82,10,0.35)' }
+                        ? { background: 'var(--brand)', color: '#fff', boxShadow: '0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent)' }
                         : { background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 {cat.nome}
               </button>
@@ -1014,7 +1033,7 @@ export default function LandingPage() {
                     {/* Overlay hover sutil */}
                     <div className="mc-overlay" style={{
                       position: 'absolute', inset: 0, opacity: 0,
-                      background: 'rgba(200,82,10,0.12)',
+                      background: 'color-mix(in srgb, var(--brand) 12%, transparent)',
                     }} />
 
                     {/* Acento brand no topo */}
@@ -1043,7 +1062,7 @@ export default function LandingPage() {
                         <p style={{
                           color: 'var(--brand)', fontFamily: 'DM Sans', fontWeight: 800,
                           fontSize: 'clamp(1.1rem, 1.6vw, 1.3rem)', margin: 0,
-                          textShadow: '0 2px 12px rgba(200,82,10,0.45)',
+                          textShadow: '0 2px 12px color-mix(in srgb, var(--brand) 45%, transparent)',
                         }}>
                           R$ {Number(item.preco).toFixed(2).replace('.', ',')}
                         </p>
@@ -1112,7 +1131,7 @@ export default function LandingPage() {
                     <div className="p-6">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="flex flex-col items-center justify-center rounded-xl flex-shrink-0"
-                             style={{ background: 'var(--brand)', minWidth: 52, padding: '0.5rem 0.75rem', boxShadow: '0 4px 12px rgba(200,82,10,0.35)' }}>
+                             style={{ background: 'var(--brand)', minWidth: 52, padding: '0.5rem 0.75rem', boxShadow: '0 4px 12px color-mix(in srgb, var(--brand) 35%, transparent)' }}>
                           <span className="font-display text-2xl font-black text-white leading-none">{dia}</span>
                           <span className="text-xs font-bold text-white uppercase tracking-wider leading-none mt-0.5" style={{ opacity: 0.85 }}>{mes}</span>
                         </div>
@@ -1187,19 +1206,19 @@ export default function LandingPage() {
       <section ref={newsletterRef} className="py-28 relative overflow-hidden"
                style={{ background: isDark ? '#080806' : '#111110' }}>
         <div className="absolute inset-0 pointer-events-none"
-             style={{ backgroundImage: 'linear-gradient(rgba(200,82,10,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(200,82,10,0.07) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+             style={{ backgroundImage: 'linear-gradient(color-mix(in srgb, var(--brand) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--brand) 7%, transparent) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
              style={{ width: 600, height: 600, borderRadius: '50%', background: 'var(--brand)', filter: 'blur(130px)', opacity: 0.07 }} />
 
         <div className="nl-content relative max-w-2xl mx-auto px-6 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8"
-               style={{ background: 'rgba(200,82,10,0.18)', border: '1px solid rgba(200,82,10,0.3)' }}>
+               style={{ background: 'color-mix(in srgb, var(--brand) 18%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 30%, transparent)' }}>
             <span style={{ fontSize: '28px' }}>✉️</span>
           </div>
           <h2 className="font-display font-medium mb-4 text-white"
               style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.8rem)' }}>
             Receba ofertas<br />
-            <span style={{ color: '#FFBA88' }}>exclusivas</span>
+            <span style={{ color: 'color-mix(in srgb, var(--brand) 65%, #fff)' }}>exclusivas</span>
           </h2>
           <p className="text-base mb-10 leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Cadastre seu email e seja o primeiro a saber sobre promoções, novidades do cardápio e eventos especiais.
@@ -1220,7 +1239,7 @@ export default function LandingPage() {
                      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontFamily: 'DM Sans' }} />
               <button type="submit"
                       className="px-7 py-4 rounded-xl font-bold text-sm whitespace-nowrap transition-all hover:scale-[1.03] active:scale-[0.97]"
-                      style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 6px 28px rgba(200,82,10,0.5)' }}>
+                      style={{ background: 'var(--brand)', color: '#fff', boxShadow: '0 6px 28px color-mix(in srgb, var(--brand) 50%, transparent)' }}>
                 Quero receber
               </button>
             </form>
@@ -1258,7 +1277,7 @@ export default function LandingPage() {
                 ].map(({ icone, titulo, desc }) => (
                   <div key={titulo} className="flex gap-4 group">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0 transition-all group-hover:scale-110 group-hover:shadow-lg duration-300"
-                         style={{ background: 'var(--brand-light)', boxShadow: '0 2px 8px rgba(200,82,10,0.1)' }}>
+                         style={{ background: 'var(--brand-light)', boxShadow: '0 2px 8px color-mix(in srgb, var(--brand) 10%, transparent)' }}>
                       {icone}
                     </div>
                     <div className="pt-0.5">
@@ -1287,7 +1306,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2.5 mb-5">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
-                     style={{ background: 'var(--brand)', boxShadow: '0 4px 12px rgba(200,82,10,0.4)' }}>🍽</div>
+                     style={{ background: 'var(--brand)', boxShadow: '0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent)' }}>🍽</div>
                 <span className="font-display text-base font-medium">Restaurante</span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>
