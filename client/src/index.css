@@ -468,8 +468,10 @@ textarea:focus {
   word-spacing:   0.1em  !important;
 }
 
-/* Sublinhar links */
-[data-a11y-links] a {
+/* Sublinhar links — cobre <a> inline e <a display:flex> (NavLink) */
+[data-a11y-links] a,
+[data-a11y-links] a > span,
+[data-a11y-links] a > p {
   text-decoration:       underline !important;
   text-underline-offset: 3px      !important;
 }
