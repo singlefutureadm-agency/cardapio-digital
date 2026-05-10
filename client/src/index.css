@@ -401,3 +401,92 @@ textarea:focus {
   align-items: center;
   justify-content: center;
 }
+
+/* ═══════════════════════════════════════
+   ACESSIBILIDADE
+═══════════════════════════════════════ */
+
+/* Skip-to-content — visível apenas no foco por teclado */
+.skip-link {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  padding: 10px 22px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 0 0 12px 12px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: top 0.18s ease !important;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Alto contraste — sobrepõe as CSS vars do tema */
+[data-a11y-contrast] {
+  --surface:        #000000 !important;
+  --card:           #0d0d0d !important;
+  --panel:          #111111 !important;
+  --border:         #ffffff !important;
+  --border-strong:  #ffffff !important;
+  --text-primary:   #ffffff !important;
+  --text-secondary: #f0f0f0 !important;
+  --text-hint:      #cccccc !important;
+  --brand:          #ffff00 !important;
+  --brand-light:    #2a2a00 !important;
+  --brand-dark:     #cccc00 !important;
+  --success:        #00ff88 !important;
+  --success-bg:     rgba(0,255,136,0.15) !important;
+  --danger:         #ff5555 !important;
+  --danger-bg:      rgba(255,85,85,0.15) !important;
+  --warning:        #ffaa00 !important;
+  --warning-bg:     rgba(255,170,0,0.15) !important;
+}
+/* Garante fundo sólido em elementos com glass */
+[data-a11y-contrast] [data-glass] { backdrop-filter: none !important; }
+
+/* Espaçamento de texto — WCAG 1.4.12 */
+[data-a11y-spacing] p,
+[data-a11y-spacing] span,
+[data-a11y-spacing] li,
+[data-a11y-spacing] td,
+[data-a11y-spacing] th,
+[data-a11y-spacing] label,
+[data-a11y-spacing] button,
+[data-a11y-spacing] a,
+[data-a11y-spacing] input,
+[data-a11y-spacing] textarea {
+  line-height:    1.8  !important;
+  letter-spacing: 0.05em !important;
+  word-spacing:   0.1em  !important;
+}
+
+/* Sublinhar links */
+[data-a11y-links] a {
+  text-decoration:       underline !important;
+  text-underline-offset: 3px      !important;
+}
+
+/* Focus visível globalmente (WCAG 2.4.7) */
+:focus-visible {
+  outline: 3px solid var(--brand) !important;
+  outline-offset: 3px !important;
+  border-radius: 4px;
+}
+
+/* Movimento reduzido — respeita preferência do sistema */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:       0.01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:      0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

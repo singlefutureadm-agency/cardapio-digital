@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './layouts/DashboardLayout'
 import ClienteLayout from './layouts/ClienteLayout'
 import GlobalCursor from './components/GlobalCursor'
+import AcessibilidadeWidget from './components/AcessibilidadeWidget'
 import { useAuth } from './context/AuthContext'
 import { useTheme } from './context/ThemeContext'
 
@@ -47,7 +48,18 @@ function FeatureGate({ featureKey, children }) {
 export default function App() {
   return (
     <>
+      {/* Skip-to-content — navegação por teclado */}
+      <a href="#conteudo-principal" className="skip-link">
+        Ir para o conteúdo principal
+      </a>
+
       <GlobalCursor />
+      <AcessibilidadeWidget />
+
+      {/* Âncora para o skip link */}
+      <span id="conteudo-principal" tabIndex={-1} aria-hidden="true"
+            style={{ position: 'absolute', top: 0, left: 0 }} />
+
       <Routes>
 
         <Route path="/"         element={<LandingPage />} />
