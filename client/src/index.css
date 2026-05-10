@@ -480,6 +480,16 @@ textarea:focus {
   text-decoration: none !important;
 }
 
+/* VLibras — oculta alt text visualmente enquanto imagens carregam */
+[vw-access-button] {
+  overflow: hidden;
+}
+[vw-access-button] img {
+  font-size:   0 !important;
+  line-height: 0 !important;
+  color:       transparent !important;
+}
+
 /* Focus visível globalmente (WCAG 2.4.7) */
 :focus-visible {
   outline: 3px solid var(--brand) !important;
