@@ -71,10 +71,31 @@ describe('listarPedidos', () => {
     expect(resultado).toHaveLength(2)
     expect(prisma.pedido.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: { notIn: ['ENTREGUE', 'CANCELADO'] } },
+        where: expect.objectContaining({
+          status: { notIn: ['ENTREGUE', 'CANCELADO'] },
+        }),
         orderBy: { createdAt: 'asc' },
       })
     )
+  })
+
+  test('limita pedidos ao dia atual (createdAt >= meia-noite de hoje)', async () => {
+    prisma.pedido.findMany.mockResolvedValue([])
+
+    await listarPedidos()
+
+    const call = prisma.pedido.findMany.mock.calls[0][0]
+    const { gte } = call.where.createdAt
+
+    // gte deve ser um Date com hora 00:00:00
+    expect(gte).toBeInstanceOf(Date)
+    expect(gte.getHours()).toBe(0)
+    expect(gte.getMinutes()).toBe(0)
+    expect(gte.getSeconds()).toBe(0)
+
+    // e deve ser hoje (mesma data)
+    const hoje = new Date()
+    expect(gte.toDateString()).toBe(hoje.toDateString())
   })
 })
 

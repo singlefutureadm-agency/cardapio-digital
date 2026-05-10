@@ -85,9 +85,13 @@ const buscarPedido = async (id) => {
 }
 
 const listarPedidos = async () => {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
   return prisma.pedido.findMany({
     where: {
-      status: { notIn: ['ENTREGUE', 'CANCELADO'] },
+      status:    { notIn: ['ENTREGUE', 'CANCELADO'] },
+      createdAt: { gte: hoje },
     },
     include: {
       itens: { include: { menuItem: true } },

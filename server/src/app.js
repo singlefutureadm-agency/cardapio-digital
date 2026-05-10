@@ -42,6 +42,9 @@ app.use(cors({
 
 app.use(express.json())
 
+// Health check — usado pelo Render para verificar se o processo está vivo
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }))
+
 // Rotas
 app.use('/api/auth',          authRoutes)
 app.use('/api/menu',          menuRoutes)
