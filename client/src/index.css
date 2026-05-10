@@ -480,20 +480,14 @@ textarea:focus {
   text-decoration: none !important;
 }
 
-/* VLibras — oculta imagens quebradas e alt text visual */
+/* VLibras — oculta alt text visual enquanto imagens carregam */
 [vw-access-button] {
   overflow: hidden;
-  min-width: 64px;
-  min-height: 64px;
 }
 [vw-access-button] img {
   font-size:   0 !important;
   line-height: 0 !important;
   color:       transparent !important;
-}
-[vw-access-button] img[src*="access_icon.svg"],
-[vw-access-button] img[src*="access_popup.jpg"] {
-  display: none !important;
 }
 
 /* Focus visível globalmente (WCAG 2.4.7) */
