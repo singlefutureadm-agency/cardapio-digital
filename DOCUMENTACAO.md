@@ -3,6 +3,8 @@
 Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard administrativo,
 área do cliente, pagamento Pix, calendário de shows, analytics e sistema de feature flags.
 
+Última atualização: 2026-05-10
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## ÍNDICE
@@ -14,11 +16,14 @@ Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard admi
   5. SERVER — Backend (Node.js + Express)
   6. BANCO DE DADOS (PostgreSQL + Prisma)
   7. STORAGE DE IMAGENS (Supabase Storage)
-  8. Variáveis de Ambiente
-  9. Comandos de Desenvolvimento
- 10. PASSO A PASSO — Publicação em Produção
- 11. Arquitetura de Produção
- 12. Credenciais e Acessos
+  8. SISTEMA DE TEMA (ThemeContext)
+  9. TESTES AUTOMATIZADOS
+ 10. Variáveis de Ambiente
+ 11. Comandos de Desenvolvimento
+ 12. PASSO A PASSO — Publicação em Produção
+ 13. Arquitetura de Produção
+ 14. Credenciais e Acessos
+ 15. Observações Importantes
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -26,22 +31,23 @@ Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard admi
 
 Infraestrutura:
 
-  - Frontend  →  Vercel          (React 19 + Vite)
-  - Backend   →  Render          (Node.js 20+ + Express)
-  - Banco     →  Supabase        (PostgreSQL gerenciado)
+  - Frontend  →  Vercel          (React 19 + Vite 8)
+  - Backend   →  Render          (Node.js 20+ + Express 5)
+  - Banco     →  Supabase        (PostgreSQL gerenciado, PgBouncer porta 6543)
   - Storage   →  Supabase        (imagens de pratos, artistas, fundo e planta)
-  - Realtime  →  Socket.io       (pedidos em tempo real)
+  - Realtime  →  Socket.io 4     (pedidos em tempo real)
 
 Fluxo principal:
 
   Cliente escaneia QR da mesa
     → Faz login / cadastro
-    → Navega no cardápio
+    → Navega no cardápio (com imagens dos pratos)
     → Adiciona itens ao carrinho
     → Realiza pedido (Pix, Cartão ou Dinheiro)
-    → Acompanha status em tempo real
-    → Cozinha recebe e atualiza o status
+    → Acompanha status em tempo real (isolado por sessão)
+    → Cozinha recebe alerta sonoro + atualiza o status no kanban
     → Garçom entrega
+    → Cliente encerra a sessão ("fechar conta")
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -49,26 +55,26 @@ Fluxo principal:
 
   cardapio-digital/
   ├── client/
-  │   ├── index.html                → Fontes Google (DM Sans, Playfair Display, Orbitron)
+  │   ├── index.html                  → Fontes Google (DM Sans, Playfair Display, Orbitron)
   │   └── src/
-  │       ├── App.jsx               → Todas as rotas + FeatureGate + ProtectedRoute
+  │       ├── App.jsx                 → Todas as rotas + FeatureGate + ProtectedRoute
   │       ├── config/
-  │       │   └── index.js          → API_BASE e API_URL centralizados
+  │       │   └── index.js            → API_BASE e API_URL centralizados
   │       ├── components/
-  │       │   ├── GlobalCursor.jsx
-  │       │   ├── ProtectedRoute.jsx → adminOnly, adminSFOnly props
-  │       │   ├── SFFooter.jsx      → Rodapé Single Future (todas as páginas)
+  │       │   ├── GlobalCursor.jsx    → cursor animado GSAP, cor via var(--brand)
+  │       │   ├── ProtectedRoute.jsx  → adminOnly, adminSFOnly props
+  │       │   ├── SFFooter.jsx        → Rodapé Single Future (todas as páginas)
   │       │   ├── ThemeToggle.jsx
   │       │   ├── CarrinhoFlutuante.jsx
   │       │   ├── ItemCard.jsx
   │       │   ├── PedidoCard.jsx
   │       │   └── PreferenciasForm.jsx
   │       ├── context/
-  │       │   ├── AuthContext.jsx   → usuário, token JWT, interceptor Axios
-  │       │   └── ThemeContext.jsx  → tema, glass, bgUrl, features (feature flags)
+  │       │   ├── AuthContext.jsx     → usuário, token JWT, interceptor Axios
+  │       │   └── ThemeContext.jsx    → tema, glass, bgUrl, features, salvarCores()
   │       ├── layouts/
-  │       │   ├── DashboardLayout.jsx → sidebar dinâmica por role+features, SFFooter
-  │       │   └── ClienteLayout.jsx   → header, bottom nav, SFFooter
+  │       │   ├── DashboardLayout.jsx → overlay mobile + sidebar desktop colapsável
+  │       │   └── ClienteLayout.jsx   → header + bottom nav (Cardápio, Pedidos, Garçom, Perfil)
   │       ├── pages/
   │       │   ├── LandingPage.jsx
   │       │   ├── Login.jsx
@@ -78,17 +84,17 @@ Fluxo principal:
   │       │   ├── Carrinho.jsx
   │       │   ├── cliente/
   │       │   │   ├── CalendarioShows.jsx
-  │       │   │   ├── ClienteCardapio.jsx
+  │       │   │   ├── ClienteCardapio.jsx    → imagens dos pratos, busca, filtros
   │       │   │   ├── ClienteCarrinho.jsx
-  │       │   │   ├── ClienteCheckout.jsx
-  │       │   │   ├── ClienteHome.jsx
-  │       │   │   ├── ClientePedidos.jsx
+  │       │   │   ├── ClienteCheckout.jsx    → PIX (gated), Cartão, Dinheiro
+  │       │   │   ├── ClienteHome.jsx        → hero imersivo + ações rápidas
+  │       │   │   ├── ClientePedidos.jsx     → pedidos da sessão atual
   │       │   │   └── ClientePerfil.jsx
   │       │   └── dashboard/
   │       │       ├── ArtistasAdmin.jsx
   │       │       ├── CardapioAdmin.jsx
-  │       │       ├── ConfiguracoesAdmin.jsx
-  │       │       ├── CozinhaView.jsx
+  │       │       ├── ConfiguracoesAdmin.jsx → tema + glass + imagem de fundo
+  │       │       ├── CozinhaView.jsx        → kanban + abas mobile + alertas sonoros
   │       │       ├── DashboardHome.jsx
   │       │       ├── FuncionalidadesAdmin.jsx  → ADMINSF only — toggles de features
   │       │       ├── HistoricoPedidos.jsx
@@ -102,38 +108,39 @@ Fluxo principal:
   │       │       ├── ShowsAdmin.jsx
   │       │       └── UsuariosAdmin.jsx
   │       ├── services/
-  │       │   ├── api.js            → instância Axios com baseURL e interceptor JWT
-  │       │   └── socket.js         → instância Socket.io-client
+  │       │   ├── api.js              → instância Axios com baseURL e interceptor JWT
+  │       │   └── socket.js           → instância Socket.io-client
   │       ├── store/
   │       │   ├── useCarrinhoStore.js
   │       │   └── usePedidoStore.js
-  │       └── index.css             → CSS Variables, temas light/dark, glass mode
+  │       └── index.css               → CSS Variables, light/dark/glass, animações, skeleton
   │
   ├── server/
   │   ├── src/
-  │   │   ├── app.js                → Express, CORS dinâmico, middlewares, rotas
-  │   │   ├── server.js             → HTTP server + Socket.io
+  │   │   ├── app.js                  → Express, CORS dinâmico, middlewares, rotas
+  │   │   ├── server.js               → HTTP server + Socket.io
   │   │   ├── lib/
-  │   │   │   └── prisma.js         → PrismaClient singleton (compartilhado por todos)
-  │   │   ├── controllers/          → lógica dos endpoints
+  │   │   │   └── prisma.js           → PrismaClient singleton (compartilhado por todos)
+  │   │   ├── controllers/            → lógica dos endpoints
   │   │   ├── middlewares/
-  │   │   │   ├── auth.middleware.js → authMiddleware, isAdmin, isAdminSF
+  │   │   │   ├── auth.middleware.js  → authMiddleware, isAdmin, isAdminSF
   │   │   │   ├── error.middleware.js
   │   │   │   └── validate.middleware.js
-  │   │   ├── routes/               → definição das rotas HTTP
-  │   │   ├── services/             → regras de negócio (todos importam lib/prisma)
-  │   │   │   └── storage.service.js → uploadFile/deleteFile (Supabase Storage)
-  │   │   └── validators/           → schemas Zod (auth, pedido)
+  │   │   ├── routes/                 → definição das rotas HTTP
+  │   │   ├── services/               → regras de negócio (todos importam lib/prisma)
+  │   │   │   └── storage.service.js  → uploadFile/deleteFile (Supabase Storage)
+  │   │   ├── validators/             → schemas Zod
+  │   │   └── __tests__/              → 60+ testes Jest + supertest
   │   ├── prisma/
-  │   │   ├── schema.prisma         → schema completo (relationMode="prisma")
+  │   │   ├── schema.prisma           → schema completo (relationMode="prisma")
   │   │   ├── seed.js
   │   │   └── migrations/
-  │   └── uploads/                  → fallback local (apenas sem Supabase configurado)
+  │   └── uploads/                    → fallback local (apenas sem Supabase configurado)
   │
-  ├── LICENSE                       → Propriedade de Miguel Cezar Ferreira / Single Future
-  ├── render.yaml                   → config de deploy no Render
-  ├── README.md                     → visão geral pública do projeto
-  └── DOCUMENTACAO.md               → este arquivo
+  ├── LICENSE                         → Propriedade de Miguel Cezar Ferreira / Single Future
+  ├── render.yaml                     → config de deploy no Render
+  ├── README.md                       → visão geral pública do projeto
+  └── DOCUMENTACAO.md                 → este arquivo
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -146,7 +153,7 @@ Fluxo principal:
   ADMINSF   → Superadmin. Acesso irrestrito. Pode ativar/desativar funcionalidades
               para USER e ADMIN via página /dashboard/funcionalidades.
 
-  No login (Login.jsx), a regra de redirecionamento é:
+  Regra de redirecionamento no login:
     role === 'ADMIN' || role === 'ADMINSF'  →  /dashboard
     role === 'USER'                          →  /selecionar-mesa
 
@@ -157,17 +164,19 @@ Fluxo principal:
     feature_menutv       → idem
     feature_preferencias → idem
     feature_mesas        → idem
+    feature_pix          → idem — controla se a opção PIX aparece no checkout
 
   Derivadas no ThemeContext como objeto `features`:
     features.shows        → boolean
     features.menutv       → boolean
     features.preferencias → boolean
     features.mesas        → boolean
+    features.pix          → boolean
 
   Lógica de default: `config.feature_X !== '0'` — ausência da chave = ativado.
 
   Componente FeatureGate (App.jsx):
-    - ADMINSF sempre passa, independente do valor
+    - ADMINSF sempre passa, independente do valor da flag
     - Se feature desativada: redireciona para /dashboard (logado) ou / (anônimo)
 
   Sidebar (DashboardLayout.jsx buildNav):
@@ -179,7 +188,7 @@ Fluxo principal:
 
   authMiddleware  → verifica JWT, injeta req.user
   isAdmin         → aceita ADMIN ou ADMINSF
-  isAdminSF       → aceita apenas ADMINSF (ex: rota de funcionalidades)
+  isAdminSF       → aceita apenas ADMINSF
 
 ### ProtectedRoute (client)
 
@@ -192,12 +201,49 @@ Fluxo principal:
 ## 4. CLIENT — FRONTEND
 
   Tecnologias:  React 19, Vite 8, Tailwind CSS 3, Axios, Socket.io-client 4,
-                Zustand 5, GSAP + ScrollTrigger, Recharts 3, @dnd-kit (mesas),
+                Zustand 5, GSAP 3 + ScrollTrigger, Recharts 3, @dnd-kit (mesas),
                 React Router DOM 7, jwt-decode
 
   Porta local:  http://localhost:5173
 
   Fontes (index.html):  DM Sans, Playfair Display, Orbitron (Single Future footer)
+
+### Design Responsivo
+
+  O projeto usa abordagem mobile-first com Tailwind CSS:
+    - ClienteLayout: navegação bottom nav com 4 abas (Cardápio, Pedidos, Garçom, Perfil)
+    - DashboardLayout: sidebar como overlay full-screen em mobile, colapsável em desktop
+    - CozinhaView: kanban com abas mobile (uma coluna por vez) e grade de 3 colunas em desktop
+    - ClienteCardapio: imagens dos pratos (w-16 h-16), touch targets maiores (w-8 h-8)
+    - Cursor personalizado só aparece em desktop (≥ 1024px)
+
+### Cursor Personalizado (GlobalCursor.jsx)
+
+  Três camadas animadas via GSAP:
+    - Dot central (8px) com animação pulse
+    - Ring externo (32px) que expande no hover e faz ripple no click
+    - Trail suave via requestAnimationFrame
+
+  Cores via CSS variables (acompanham o tema dinamicamente):
+    --cursor-dot:   var(--brand)
+    --cursor-glow:  color-mix(in srgb, var(--brand) 90%, transparent)
+    --cursor-halo:  color-mix(in srgb, var(--brand) 50%, transparent)
+    --cursor-ring:  color-mix(in srgb, var(--brand) 55%, transparent)
+    --cursor-trail: color-mix(in srgb, var(--brand) 12%, transparent)
+
+  Comportamento:
+    - Hover em button/a/input: ring expande (scale 2.2)
+    - Click: ripple elástico no ring + contração do dot
+    - Sair da janela: fade out de todos os elementos
+    - MutationObserver: re-registra hover em elementos dinamicamente adicionados
+
+### Isolamento de Pedidos por Sessão (ClientePedidos.jsx)
+
+  O cliente pode retornar à mesa em visitas diferentes. Para não misturar pedidos:
+    - sessionTimestamp gravado em sessionStorage quando o cliente entra na mesa
+    - ClientePedidos busca apenas pedidos criados após esse timestamp
+    - "Fechar conta" limpa o sessionStorage e redireciona para /selecionar-mesa
+    - O backend exclui pedidos já pagos da lista de mesas abertas (listarMesasAbertas)
 
 ### Rotas da aplicação
 
@@ -209,16 +255,16 @@ Fluxo principal:
   /pedido/:id                 → Status do pedido em tempo real
 
   /cliente/:mesa              → ClienteLayout (ProtectedRoute)
-    index                     → ClienteHome (CalendarioShows se feature.shows)
-    cardapio                  → ClienteCardapio
+    index                     → ClienteHome (hero imersivo + ações rápidas)
+    cardapio                  → ClienteCardapio (com imagens)
     carrinho                  → ClienteCarrinho
-    checkout                  → ClienteCheckout
-    pedidos                   → ClientePedidos
+    checkout                  → ClienteCheckout (PIX gated por feature_pix)
+    pedidos                   → ClientePedidos (sessão atual)
     perfil                    → ClientePerfil
 
   /dashboard                  → DashboardLayout (ProtectedRoute adminOnly)
     index                     → DashboardHome
-    cozinha                   → CozinhaView
+    cozinha                   → CozinhaView (kanban + alertas sonoros)
     cardapio                  → CardapioAdmin
     usuarios                  → UsuariosAdmin
     newsletter                → NewsletterAdmin
@@ -247,7 +293,7 @@ Fluxo principal:
 
   AuthContext       → usuário logado, token JWT, interceptor Axios
   ThemeContext      → tema (light/dark), glass, bgUrl, features (feature flags),
-                      salvarCores() para salvar config/features no banco
+                      salvarCores(), resetarCores(), previewCor(), previewGlass()
   useCarrinhoStore  → itens, adicionarItem, removerItem, limparCarrinho, totais
   usePedidoStore    → pedido atual em andamento
 
@@ -255,16 +301,10 @@ Fluxo principal:
 
   Componente: client/src/components/SFFooter.jsx
   Presente em: todas as páginas (layouts e standalone)
-  Posicionamento: normal no fluxo do documento (não fixo)
   Padrão sticky-footer: container pai = min-h-screen flex flex-col;
     conteúdo interno = flex-1; SFFooter ao final → sempre no bottom.
   Estilo: fundo #040404, cor #00e5a8, fonte Orbitron
   Link: https://www.singlefuture.com.br
-
-### Comunicação com o backend
-
-  HTTP:     Axios com interceptor JWT automático
-  Realtime: Socket.io — salas "cozinha" e "mesa_{numero}"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -286,6 +326,7 @@ Fluxo principal:
       log: ['error'],
     })
 
+  O singleton força os parâmetros PgBouncer na URL se não estiverem presentes.
   Nunca criar `new PrismaClient()` diretamente nos services/routes.
   Razão: PgBouncer em modo transaction não suporta múltiplas conexões com
   prepared statements. Um singleton com connection_limit=1 resolve isso.
@@ -322,8 +363,8 @@ Fluxo principal:
     CRUD completo    → (admin)
 
   /api/configuracoes
-    GET   /          → Configurações de tema (público)
-    POST  /          → Salvar configurações e feature flags (admin)
+    GET   /          → Configurações de tema e flags (público)
+    POST  /          → Salvar configurações e feature flags (admin) — upsert sequencial
     POST  /fundo     → Upload imagem de fundo
     DELETE /fundo    → Remover imagem de fundo
 
@@ -354,12 +395,19 @@ Fluxo principal:
     pedido_novo        → sala "cozinha"    (pedido criado)
     pedido_atualizado  → sala "cozinha"    (status mudou)
     status_atualizado  → sala "mesa_X"    ({ pedidoId, status })
+    chamar_garcom      → sala "cozinha"    (cliente chamou garçom)
 
 ### Pagamento Pix
 
   Gera payload QR Code EMV real (padrão Banco Central) com CRC16.
   Config via: PIX_CHAVE, PIX_NOME, PIX_CIDADE
   Confirmação: manual pelo admin em /dashboard/pagamentos
+
+### Configurações — upsert sequencial
+
+  O endpoint POST /api/configuracoes usa for...of com await (não Promise.all)
+  para garantir que cada upsert termine antes do próximo começar.
+  Razão: PgBouncer com connection_limit=1 não suporta queries paralelas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -394,7 +442,7 @@ Fluxo principal:
                       imagemUrl: URL absoluta do Supabase Storage (https://...)
                       @@map("menu_items")
 
-  Pedido            → mesa, mesaId?, status, total, userId?
+  Pedido            → mesa, mesaId?, status, total, userId?, createdAt
                       relações: itens[], pagamento?, mesaRel?, user?
 
   PedidoItem        → pedidoId, menuItemId, quantidade, observacao?, subtotal
@@ -405,12 +453,14 @@ Fluxo principal:
   Mesa              → numero @unique, ativa, lugares, posX, posY, cor
 
   Configuracao      → chave @unique, valor
-                      Uso: prefixos light_/dark_ para cores do tema,
-                           planta_url para planta do restaurante,
-                           feature_shows / feature_menutv / feature_preferencias /
-                           feature_mesas para feature flags ('0'=off, '1'=on)
+                      Prefixos: light_/dark_ (cores do tema)
+                      Especiais: planta_url, glass_enabled, glass_color, glass_opacity,
+                                 glass_blur, glass_text, glass_bg_url
+                      Flags:     feature_shows, feature_menutv, feature_preferencias,
+                                 feature_mesas, feature_pix
 
-  PerguntaPreferencia, OpcaoPreferencia, RespostaPreferencia (@@unique[userId, perguntaId])
+  PerguntaPreferencia, OpcaoPreferencia, RespostaPreferencia
+                      @@unique([userId, perguntaId])
 
   Newsletter        → email @unique, ativo
 
@@ -454,17 +504,101 @@ Fluxo principal:
     deleteFile(urlOrPath)                  → remove do bucket
 
   Convenção de nomes no bucket:
-    item_{id}.{ext}    → foto de prato
+    item_{id}.{ext}    → foto de prato (exibida em ClienteCardapio)
     artista_{id}.{ext} → foto de artista
-    fundo.{ext}        → imagem de fundo do tema glass
+    fundo.{ext}        → imagem de fundo do glass mode
     planta.{ext}       → planta do restaurante (URL em Configuracao.planta_url)
 
-  Regra obrigatória no frontend:
+  Regra obrigatória no frontend — sempre verificar antes de prefixar:
     src={url.startsWith('http') ? url : `${API_BASE}${url}`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 8. VARIÁVEIS DE AMBIENTE
+## 8. SISTEMA DE TEMA (ThemeContext)
+
+  Arquivo: client/src/context/ThemeContext.jsx
+
+  O ThemeContext gerencia:
+    - Modo: light | dark (persistido em localStorage)
+    - Cores customizadas: carregadas de GET /api/configuracoes
+    - Glass effect: ativação, cor, opacidade, blur e imagem de fundo
+    - Feature flags: derivadas do mesmo objeto de configuração
+
+### Como as cores propagam
+
+  1. ThemeContext carrega config do banco via GET /api/configuracoes
+  2. buildTheme(modo, config) monta um mapa de CSS vars → valores
+     - Usa resolveVar(saved, default): se o valor salvo é vazio/ausente, usa o default
+  3. aplicarTheme(vars): itera e seta cada var em document.documentElement.style
+  4. O CSS usa var(--brand), var(--surface), etc. — e reage imediatamente
+
+  Funções expostas pelo contexto:
+    toggle()          → alterna light/dark e re-aplica o tema
+    salvarCores(obj)  → POST /api/configuracoes + re-aplica tema com dados novos
+    resetarCores()    → zera todas as cores customizadas para os defaults
+    previewCor(var, val) → aplica uma var temporariamente (para live preview)
+    previewGlass(ativo, config) → preview do glass effect sem salvar
+
+### Glass Mode
+
+  Ativado quando glass_enabled = 'true' na Configuracao.
+  Aplica data-glass="true" no <html> e as CSS vars:
+    --glass-bg, --glass-blur, --glass-border, --glass-shadow, --glass-text
+
+  O CSS em index.css usa seletor:
+    html[data-glass="true"] .app-dashboard :is(div, button, ...).rounded-2xl
+
+### CSS Variables de referência
+
+  Marca:      --brand, --brand-light, --brand-dark
+  Superfície: --surface, --card, --panel, --border, --border-strong
+  Texto:      --text-primary, --text-secondary, --text-hint
+  Semântica:  --success, --success-bg, --warning, --warning-bg, --danger, --danger-bg
+  Sombras:    --shadow-sm, --shadow-md, --shadow-lg, --shadow-brand, --shadow-glow
+  Raios:      --radius-sm (8px), --radius-md (12px), --radius-lg (16px), --radius-xl (20px)
+  Cursor:     --cursor-dot, --cursor-glow, --cursor-halo, --cursor-ring, --cursor-trail
+
+  Cursors são derivados via color-mix() de --brand e atualizam automaticamente
+  quando o admin muda a cor da marca.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 9. TESTES AUTOMATIZADOS
+
+  Framework: Jest + supertest
+  Diretório: server/src/__tests__/
+  Comando:   cd server && npm test
+
+  Total de testes: 60+
+
+  ┌─────────────────────────────────────────────────────┬─────────────┐
+  │ Arquivo                                             │ O que cobre │
+  ├─────────────────────────────────────────────────────┼─────────────┤
+  │ auth.middleware.test.js       (123 linhas)          │ authMiddleware, isAdmin, isAdminSF
+  │ auth.service.test.js          ( 90 linhas)          │ login, register, validações Zod
+  │ pedido.service.test.js        (108 linhas)          │ criação de pedidos, listagem, status
+  │ pedido.service.extra.test.js  (168 linhas)          │ listarMesasAbertas, fechar conta, edge cases
+  │ pagamento.service.test.js     (285 linhas)          │ pagamentos Pix, confirmação, pendentes
+  │ clientePedidos.filter.test.js ( 69 linhas)          │ filtro por sessionTimestamp
+  │ configuracao.route.test.js    (172 linhas)          │ GET/POST configurações, auth, Prisma errors
+  │ prisma.lib.test.js            ( 48 linhas)          │ singleton, parâmetros PgBouncer obrigatórios
+  └─────────────────────────────────────────────────────┴─────────────┘
+
+  Padrões usados nos testes:
+    - jest.mock('../lib/prisma') → isola o banco (mocks por arquivo)
+    - multer stub sem binários nativos:
+        jest.mock('multer', () => {
+          const multerFn = () => ({ single: () => (req, res, next) => next() })
+          multerFn.memoryStorage = () => ({})
+          return multerFn
+        })
+    - supertest para integração de rotas Express completas
+    - JWT de teste: jwt.sign({ role: 'ADMIN' }, 'test-secret')
+    - beforeEach(() => jest.clearAllMocks()) entre cada teste
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 10. VARIÁVEIS DE AMBIENTE
 
 ### server/.env (não commitado)
 
@@ -490,7 +624,7 @@ Fluxo principal:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 9. COMANDOS DE DESENVOLVIMENTO
+## 11. COMANDOS DE DESENVOLVIMENTO
 
   # Instalar dependências
   cd client && npm install
@@ -512,6 +646,10 @@ Fluxo principal:
   que usam prepared statements (ex: ALTER TYPE). Para esses casos, use o
   SQL Editor do Supabase diretamente.
 
+  # Testes
+  cd server && npm test                       → todos os testes
+  cd server && npm test -- --testPathPatterns=configuracao   → arquivo específico
+
   # Setup inicial
   cd server && node criar-admin.js    → Cria usuário ADMIN padrão
   cd server && node criar-mesas.js    → Cria mesas iniciais
@@ -521,14 +659,14 @@ Fluxo principal:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 10. PASSO A PASSO — PUBLICAÇÃO EM PRODUÇÃO
+## 12. PASSO A PASSO — PUBLICAÇÃO EM PRODUÇÃO
 
   Plataformas:
     Banco de dados + Storage  →  Supabase  (gratuito)
     Backend                   →  Render    (gratuito, dorme após 15min)
     Frontend                  →  Vercel    (gratuito)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 1 — Configurar Supabase
 
@@ -543,14 +681,14 @@ Fluxo principal:
   1.4  Gerar JWT_SECRET:
        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 2 — Preparar repositório
 
   2.1  Verificar que .env NÃO está sendo commitado (git status)
   2.2  git add . && git commit -m "deploy" && git push origin main
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 3 — Publicar backend no Render
 
@@ -580,7 +718,7 @@ Fluxo principal:
          node criar-admin.js
          node criar-mesas.js
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 4 — Publicar frontend na Vercel
 
@@ -595,7 +733,7 @@ Fluxo principal:
 
   4.4  Deploy → aguardar → anotar a URL gerada
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### ETAPA 5 — Conectar Vercel ↔ Render
 
@@ -606,14 +744,17 @@ Fluxo principal:
        [ ] Login como ADMINSF → redireciona para /dashboard
        [ ] Login como USER → redireciona para /selecionar-mesa
        [ ] Dashboard carrega dados do banco
-       [ ] Cozinha recebe pedido em tempo real
+       [ ] Cozinha recebe pedido em tempo real + alerta sonoro
        [ ] Upload de imagem funciona (Supabase Storage)
+       [ ] Imagem dos pratos aparece no cardápio do cliente
        [ ] ADMINSF acessa Funcionalidades e toggle features
        [ ] Feature desativada → item some do sidebar e rota redireciona
+       [ ] Tema salvo propaga para todo o site (cursor, glass, fundo)
+       [ ] Fechar conta redireciona para /selecionar-mesa
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 11. ARQUITETURA DE PRODUÇÃO
+## 13. ARQUITETURA DE PRODUÇÃO
 
   Browser / App
        │
@@ -638,7 +779,7 @@ Fluxo principal:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 12. CREDENCIAIS E ACESSOS
+## 14. CREDENCIAIS E ACESSOS
 
   DESENVOLVIMENTO LOCAL
 
@@ -662,7 +803,7 @@ Fluxo principal:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## OBSERVAÇÕES IMPORTANTES
+## 15. OBSERVAÇÕES IMPORTANTES
 
   1. PgBouncer (Supabase Pooler porta 6543) exige:
        - statement_cache_size=0 na DATABASE_URL
@@ -675,21 +816,31 @@ Fluxo principal:
      npx prisma db push — execute SQL direto no Supabase:
        ALTER TYPE "Role" ADD VALUE 'NOME_DO_VALOR';
 
-  3. O plano gratuito do Render dorme após 15min sem uso.
+  3. O endpoint POST /api/configuracoes usa for...of com await (não Promise.all).
+     Com PgBouncer connection_limit=1, queries paralelas causam fila saturada.
+
+  4. O plano gratuito do Render dorme após 15min sem uso.
      Primeira requisição pode demorar 30–60s.
      Use UptimeRobot para manter ativo ou upgrade para Starter ($7/mês).
 
-  4. Nunca commitar .env com secrets. O .env.production é commitado
+  5. Nunca commitar .env com secrets. O .env.production é commitado
      intencionalmente (apenas vars VITE_ sem secrets).
 
-  5. Confirmação de pagamento Pix é manual no /dashboard/pagamentos.
+  6. Confirmação de pagamento Pix é manual no /dashboard/pagamentos.
      Para automação, integrar webhook de provedor de pagamento.
 
-  6. Supabase Storage retorna URLs absolutas. Sempre verificar antes de prefixar:
+  7. Supabase Storage retorna URLs absolutas. Sempre verificar antes de prefixar:
        url.startsWith('http') ? url : `${API_BASE}${url}`
 
-  7. O SFFooter usa padrão sticky-footer sem position:fixed.
+  8. O SFFooter usa padrão sticky-footer sem position:fixed.
      O container pai deve ser min-h-screen flex flex-col e o conteúdo
      interno deve ter flex-1, para o footer ficar sempre no bottom.
+
+  9. O isolamento de pedidos por sessão usa sessionStorage (não localStorage).
+     Ao fechar o browser ou abrir nova aba, uma nova sessão começa.
+     O backend exclui pedidos já pagos de listarMesasAbertas.
+
+ 10. A cor do cursor (dot, ring, trail) é derivada via color-mix() de --brand.
+     Ao mudar a cor da marca no ConfiguracoesAdmin, o cursor atualiza sem reload.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

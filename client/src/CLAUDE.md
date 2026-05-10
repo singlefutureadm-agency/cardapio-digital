@@ -1,7 +1,7 @@
 # CLAUDE.md — Cardápio Digital
 
 > Contexto do projeto para novas sessões com Claude.
-> Última atualização: 2026-04-26
+> Última atualização: 2026-05-10
 
 ---
 
@@ -24,7 +24,7 @@ controlados por um superadmin (ADMINSF).
 | Item | Tecnologia |
 |---|---|
 | Framework | React 19 + Vite 8 |
-| Estilo | Tailwind CSS 3 + CSS Variables customizadas |
+| Estilo | Tailwind CSS 3 + CSS Variables customizadas (design tokens) |
 | Fontes | DM Sans + Playfair Display + Orbitron (footer SF) |
 | Estado global | Zustand 5 + AuthContext + ThemeContext |
 | Roteamento | React Router DOM 7 |
@@ -48,6 +48,7 @@ controlados por um superadmin (ADMINSF).
 | Upload | Multer (memoryStorage) |
 | Storage | Supabase Storage via `@supabase/supabase-js` |
 | QR Code | qrcode (npm) |
+| Testes | Jest + supertest (60+ testes em `__tests__/`) |
 
 ---
 
@@ -61,7 +62,7 @@ cardapio-digital/
 │       ├── App.jsx                 → rotas + FeatureGate + ProtectedRoute
 │       ├── config/index.js         → API_BASE e API_URL
 │       ├── components/
-│       │   ├── GlobalCursor.jsx
+│       │   ├── GlobalCursor.jsx    → cursor GSAP, cor via var(--brand) + color-mix()
 │       │   ├── ProtectedRoute.jsx  → props: adminOnly, adminSFOnly
 │       │   ├── SFFooter.jsx        → rodapé Single Future (todas as páginas)
 │       │   ├── ThemeToggle.jsx
@@ -73,8 +74,8 @@ cardapio-digital/
 │       │   ├── AuthContext.jsx     → user, login, logout, register, token JWT
 │       │   └── ThemeContext.jsx    → isDark, glass, bgUrl, features, salvarCores()
 │       ├── layouts/
-│       │   ├── DashboardLayout.jsx → sidebar buildNav(role, features), SFFooter
-│       │   └── ClienteLayout.jsx   → header, bottom nav, SFFooter sticky-footer
+│       │   ├── DashboardLayout.jsx → overlay mobile + sidebar colapsável desktop
+│       │   └── ClienteLayout.jsx   → header + bottom nav (4 abas + Garçom)
 │       ├── pages/
 │       │   ├── LandingPage.jsx     → shows gated por features.shows
 │       │   ├── Login.jsx           → redireciona ADMIN+ADMINSF→/dashboard, USER→/selecionar-mesa
@@ -84,17 +85,17 @@ cardapio-digital/
 │       │   ├── Carrinho.jsx
 │       │   ├── cliente/
 │       │   │   ├── CalendarioShows.jsx
-│       │   │   ├── ClienteCardapio.jsx
+│       │   │   ├── ClienteCardapio.jsx    → imagens dos pratos (Supabase Storage)
 │       │   │   ├── ClienteCarrinho.jsx
-│       │   │   ├── ClienteCheckout.jsx
-│       │   │   ├── ClienteHome.jsx        → CalendarioShows gated por features.shows
-│       │   │   ├── ClientePedidos.jsx
+│       │   │   ├── ClienteCheckout.jsx    → PIX gated por features.pix
+│       │   │   ├── ClienteHome.jsx        → hero imersivo + ações rápidas
+│       │   │   ├── ClientePedidos.jsx     → pedidos da sessão atual (sessionStorage)
 │       │   │   └── ClientePerfil.jsx
 │       │   └── dashboard/
 │       │       ├── ArtistasAdmin.jsx
 │       │       ├── CardapioAdmin.jsx
-│       │       ├── ConfiguracoesAdmin.jsx
-│       │       ├── CozinhaView.jsx
+│       │       ├── ConfiguracoesAdmin.jsx → tema + glass + imagem de fundo
+│       │       ├── CozinhaView.jsx        → kanban + abas mobile + alertas sonoros
 │       │       ├── DashboardHome.jsx
 │       │       ├── FuncionalidadesAdmin.jsx  ← ADMINSF only — toggles features
 │       │       ├── HistoricoPedidos.jsx
@@ -113,7 +114,7 @@ cardapio-digital/
 │       ├── store/
 │       │   ├── useCarrinhoStore.js
 │       │   └── usePedidoStore.js
-│       └── index.css               → CSS vars, light/dark/glass, scrollbar, inputs
+│       └── index.css               → CSS vars, light/dark/glass, scrollbar, inputs, animações
 │
 ├── server/
 │   ├── src/
@@ -129,7 +130,8 @@ cardapio-digital/
 │   │   ├── routes/
 │   │   ├── services/               → todos importam `../lib/prisma`
 │   │   │   └── storage.service.js
-│   │   └── validators/
+│   │   ├── validators/
+│   │   └── __tests__/              → 60+ testes Jest + supertest
 │   ├── prisma/
 │   │   ├── schema.prisma           → relationMode="prisma" (obrigatório PgBouncer)
 │   │   ├── seed.js
@@ -170,6 +172,7 @@ Salvas na tabela `Configuracao` como `'0'` / `'1'` (ausência = ativado por padr
 | `feature_menutv` | MenuTV (rota pública + preview no dashboard) |
 | `feature_preferencias` | PreferenciasAdmin + Analytics |
 | `feature_mesas` | MesasAdmin |
+| `feature_pix` | Opção PIX no checkout do cliente |
 
 Derivação no `ThemeContext`:
 ```js
@@ -178,6 +181,7 @@ const features = {
   menutv:       config.feature_menutv       !== '0',
   preferencias: config.feature_preferencias !== '0',
   mesas:        config.feature_mesas        !== '0',
+  pix:          config.feature_pix          !== '0',
 }
 ```
 
@@ -206,7 +210,12 @@ para persistir as flags — reutiliza o mesmo endpoint `POST /api/configuracoes`
 **Mesa** — `id, numero @unique, ativa, lugares, posX, posY, cor`
 
 **Configuracao** — `id, chave @unique, valor`
-Chaves: `light_*` / `dark_*` (cores do tema), `planta_url`, `feature_*` (flags)
+
+Chaves de tema: `light_*/dark_*` (cores), `glass_enabled`, `glass_color`, `glass_opacity`,
+`glass_blur`, `glass_text`, `glass_bg_url`, `planta_url`
+
+Chaves de feature flag: `feature_shows`, `feature_menutv`, `feature_preferencias`,
+`feature_mesas`, `feature_pix`
 
 **Newsletter** — `id, email @unique, ativo`
 
@@ -264,6 +273,37 @@ ALTER TYPE "Role" ADD VALUE 'ADMINSF';
 ```
 `npx prisma db push` falha para ENUMs com PgBouncer.
 
+5. **POST /api/configuracoes** usa `for...of` com `await` (nunca `Promise.all`)
+para garantir queries sequenciais com connection_limit=1.
+
+---
+
+## Sistema de Tema (ThemeContext)
+
+O ThemeContext carrega configurações de `GET /api/configuracoes` e aplica
+CSS Custom Properties em `document.documentElement.style`:
+
+```js
+function buildTheme(modo, config) {
+  // Usa resolveVar(saved, default) — usa default se campo vazio ou ausente
+}
+function aplicarTheme(vars) {
+  Object.entries(vars).forEach(([k, v]) => {
+    document.documentElement.style.setProperty(k, v)
+  })
+}
+```
+
+Padrão `configRef` para evitar closure stale:
+```js
+const configRef = useRef({})
+useEffect(() => { configRef.current = config }, [config])
+// toggle(), previewGlass() usam configRef.current em vez de config
+```
+
+Cursor acompanha `--brand` via `color-mix()` — atualiza automaticamente ao
+mudar a cor da marca sem nenhum código extra no GlobalCursor.jsx.
+
 ---
 
 ## Rotas React (App.jsx)
@@ -315,6 +355,90 @@ ALTER TYPE "Role" ADD VALUE 'ADMINSF';
 
 ---
 
+## Socket.io — Salas e Eventos
+
+```
+Salas:
+  cozinha       → admin/cozinheiro
+  mesa_{numero} → cliente daquela mesa
+
+Eventos servidor → cliente:
+  pedido_novo        → sala cozinha  (pedido criado — aciona alerta sonoro Web Audio)
+  pedido_atualizado  → sala cozinha  (status mudou)
+  status_atualizado  → sala mesa_X   ({ pedidoId, status })
+  chamar_garcom      → sala cozinha  (cliente chamou garçom)
+```
+
+---
+
+## Design Responsivo
+
+O projeto é mobile-first. Padrões principais:
+
+**DashboardLayout.jsx** — sidebar:
+- Mobile: `fixed inset-y-0 left-0 z-50 flex md:hidden` com overlay backdrop
+- `mobileMenuOpen` state, fecha ao navegar (`useEffect` em `location.pathname`)
+- Scroll do body bloqueado quando drawer aberto
+- Desktop: `hidden md:flex`, colapsável via `expanded` state
+
+**CozinhaView.jsx** — kanban:
+- `abaAtiva` state — em mobile mostra uma coluna por vez
+- Tab bar `flex md:hidden` com cores por status
+- Grade `md:grid md:grid-cols-3`
+
+**ClienteLayout.jsx** — bottom nav com 4 abas:
+- Cardápio, Pedidos, Garçom (chama garçom via socket), Perfil
+- `relative` no NavLink garante que o indicador `absolute` fique posicionado corretamente
+
+**ClienteCardapio.jsx** — imagens dos pratos:
+- Componente `ItemImagem`: exibe imagem do Supabase se `imagemUrl` existe, fallback emoji
+- `src={url.startsWith('http') ? url : \`${API_BASE}${url}\`}`
+
+---
+
+## Isolamento de Pedidos por Sessão
+
+```js
+// sessionStorage — salvo ao entrar na mesa
+sessionStorage.setItem('sessionTimestamp', Date.now().toString())
+
+// ClientePedidos — filtra pelo timestamp
+const ts = Number(sessionStorage.getItem('sessionTimestamp') ?? 0)
+const pedidosDaSessao = pedidos.filter(p => new Date(p.createdAt).getTime() >= ts)
+```
+
+"Fechar conta" limpa o sessionStorage e redireciona para `/selecionar-mesa`.
+O backend exclui pedidos já pagos de `listarMesasAbertas`.
+
+---
+
+## Testes Automatizados
+
+```
+server/src/__tests__/
+  auth.middleware.test.js       → authMiddleware, isAdmin, isAdminSF
+  auth.service.test.js          → login, register
+  pedido.service.test.js        → criação, listagem, status
+  pedido.service.extra.test.js  → listarMesasAbertas, fechar conta, edge cases
+  pagamento.service.test.js     → Pix, confirmação, pendentes
+  clientePedidos.filter.test.js → isolamento por sessionTimestamp
+  configuracao.route.test.js    → GET/POST rotas, auth, erros Prisma
+  prisma.lib.test.js            → singleton, PgBouncer params
+```
+
+Rodar: `cd server && npm test`
+
+Padrão de mock para multer (sem binários nativos):
+```js
+jest.mock('multer', () => {
+  const multerFn = () => ({ single: () => (req, res, next) => next() })
+  multerFn.memoryStorage = () => ({})
+  return multerFn
+})
+```
+
+---
+
 ## SFFooter — Rodapé Single Future
 
 **Arquivo:** `client/src/components/SFFooter.jsx`
@@ -324,14 +448,11 @@ SelecionarMesa, PedidoStatus, LandingPage)
 
 **Padrão sticky-footer (sem position:fixed):**
 ```jsx
-// Container pai
 <div className="min-h-screen flex flex-col">
-  {/* conteúdo que deve crescer */}
   <div className="flex-1">...</div>
   <SFFooter />
 </div>
 ```
-Nos layouts (DashboardLayout, ClienteLayout), `<Outlet />` é envolvido em `<div className="flex-1">` dentro de um `<main className="flex flex-col">`.
 
 ---
 
@@ -369,60 +490,17 @@ src={url.startsWith('http') ? url : `${API_BASE}${url}`}
 --success, --success-bg, --warning, --warning-bg, --danger, --danger-bg
 
 /* Sombras */
---shadow-sm, --shadow-md, --shadow-lg
+--shadow-sm, --shadow-md, --shadow-lg, --shadow-brand, --shadow-glow
+
+/* Raios */
+--radius-sm (8px), --radius-md (12px), --radius-lg (16px), --radius-xl (20px)
+
+/* Cursor (derivadas de --brand via color-mix, atualizam com o tema) */
+--cursor-dot, --cursor-glow, --cursor-halo, --cursor-ring, --cursor-trail
 ```
 
 Aplicadas via `data-theme="light"` / `data-theme="dark"` no `<html>`.
 Glass mode via `data-glass="true"` no `<html>`.
-
----
-
-## Socket.io — Salas e Eventos
-
-```
-Salas:
-  cozinha       → admin/cozinheiro
-  mesa_{numero} → cliente daquela mesa
-
-Eventos servidor → cliente:
-  pedido_novo        → sala cozinha  (pedido criado)
-  pedido_atualizado  → sala cozinha  (status mudou)
-  status_atualizado  → sala mesa_X   ({ pedidoId, status })
-```
-
----
-
-## Fluxo de Pagamento
-
-```
-1. Checkout → escolha Pix/Cartão/Dinheiro
-2. POST /pedidos → cria pedido
-3. POST /pagamentos → cria pagamento
-   - PIX: backend gera payload EMV CRC16 + QR base64
-   - CARTÃO/DINHEIRO: tipo=GARCOM
-4. PIX: exibe QR + "Copia e cola"
-5. Admin confirma em /dashboard/pagamentos
-```
-
----
-
-## Observações Críticas
-
-| Regra | Detalhe |
-|---|---|
-| `services/api.js` | SEMPRE usar instância Axios com interceptor. `axios` direto → 401 |
-| `API_URL` | Já inclui `/api`. Não duplicar nas chamadas |
-| `imagemUrl` | Sempre `startsWith('http')` antes de prefixar |
-| `lib/prisma.js` | Único ponto de instância do PrismaClient. Nunca criar outro |
-| `statement_cache_size=0` | Obrigatório na DATABASE_URL com PgBouncer |
-| `relationMode = "prisma"` | Obrigatório no schema.prisma com PgBouncer |
-| `Boolean no Zod` | Enviar `Boolean(form.ativo)` — Zod 4 rejeita string `"true"` |
-| FK constraints | Deletar dependentes antes do pai |
-| `toDateTime()` | Input `type="date"` retorna `"YYYY-MM-DD"` — converter para ISO |
-| `/historico` | Rota específica deve vir antes de `/:id` em `pedido.routes.js` |
-| Avaliação show | `@@unique([showId, userId])` — upsert com createOrUpdate |
-| Confirmação Pix | Manual pelo admin. Sem webhook automático |
-| Enum no banco | Adicionar valor via SQL: `ALTER TYPE "Role" ADD VALUE '...'` |
 
 ---
 
@@ -459,6 +537,10 @@ cd server && npm run dev          # http://localhost:3001 (nodemon)
 # Build
 cd client && npm run build
 
+# Testes
+cd server && npm test
+cd server && npm test -- --testPathPatterns=configuracao   # arquivo específico
+
 # Banco
 cd server && npx prisma generate
 cd server && npx prisma studio
@@ -482,3 +564,26 @@ Admin:   admin@restaurante.com / admin123  (role: ADMIN)
 Cliente: cadastrar via /register ou UsuariosAdmin
 ADMINSF: promover via SQL após criar o usuário
 ```
+
+---
+
+## Observações Críticas
+
+| Regra | Detalhe |
+|---|---|
+| `services/api.js` | SEMPRE usar instância Axios com interceptor. `axios` direto → 401 |
+| `API_URL` | Já inclui `/api`. Não duplicar nas chamadas |
+| `imagemUrl` | Sempre `startsWith('http')` antes de prefixar |
+| `lib/prisma.js` | Único ponto de instância do PrismaClient. Nunca criar outro |
+| `statement_cache_size=0` | Obrigatório na DATABASE_URL com PgBouncer |
+| `relationMode = "prisma"` | Obrigatório no schema.prisma com PgBouncer |
+| `POST /api/configuracoes` | Usar `for...of await` (nunca `Promise.all`) com PgBouncer |
+| `Boolean no Zod` | Enviar `Boolean(form.ativo)` — Zod 4 rejeita string `"true"` |
+| FK constraints | Deletar dependentes antes do pai |
+| `toDateTime()` | Input `type="date"` retorna `"YYYY-MM-DD"` — converter para ISO |
+| `/historico` | Rota específica deve vir antes de `/:id` em `pedido.routes.js` |
+| Avaliação show | `@@unique([showId, userId])` — upsert com createOrUpdate |
+| Confirmação Pix | Manual pelo admin. Sem webhook automático |
+| Enum no banco | Adicionar valor via SQL: `ALTER TYPE "Role" ADD VALUE '...'` |
+| Cursor | Cor via `color-mix(in srgb, var(--brand) X%, transparent)` — sem hardcode |
+| sessionTimestamp | Gravar em `sessionStorage` ao entrar na mesa para isolar pedidos |
