@@ -137,9 +137,9 @@ export default function UsuariosAdmin() {
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                         style={{
-                          background: u.role === 'ADMIN' ? 'var(--brand-light)' : 'rgba(129,140,248,0.15)',
-                          color:      u.role === 'ADMIN' ? 'var(--brand)'       : '#818CF8',
-                          border:     `1.5px solid ${u.role === 'ADMIN' ? 'var(--brand)' : '#818CF8'}33`,
+                          background: u.role === 'ADMINSF' ? 'rgba(251,191,36,0.15)' : u.role === 'ADMIN' ? 'var(--brand-light)' : 'rgba(129,140,248,0.15)',
+                          color:      u.role === 'ADMINSF' ? '#F59E0B'               : u.role === 'ADMIN' ? 'var(--brand)'       : '#818CF8',
+                          border:     `1.5px solid ${u.role === 'ADMINSF' ? '#F59E0B' : u.role === 'ADMIN' ? 'var(--brand)' : '#818CF8'}33`,
                         }}
                       >
                         {u.nome.charAt(0).toUpperCase()}
@@ -161,7 +161,9 @@ export default function UsuariosAdmin() {
                   <td className="px-4 py-3">
                     <span
                       className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                      style={u.role === 'ADMIN'
+                      style={u.role === 'ADMINSF'
+                        ? { background: 'rgba(251,191,36,0.15)', color: '#F59E0B' }
+                        : u.role === 'ADMIN'
                         ? { background: 'var(--brand-light)', color: 'var(--brand)' }
                         : { background: 'rgba(129,140,248,0.15)', color: '#818CF8' }}
                     >
@@ -259,6 +261,9 @@ export default function UsuariosAdmin() {
                         onBlur={(e)  => e.target.style.borderColor = 'var(--border)'}>
                   <option value="USER">USER — Cliente</option>
                   <option value="ADMIN">ADMIN — Administrador</option>
+                  {meuUser.role === 'ADMINSF' && (
+                    <option value="ADMINSF">ADMINSF — Super Administrador SF</option>
+                  )}
                 </select>
               </div>
             </div>

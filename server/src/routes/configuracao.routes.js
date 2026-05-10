@@ -30,6 +30,12 @@ router.post('/', authMiddleware, isAdmin, async (req, res, next) => {
     const entries = Object.entries(req.body)
     if (entries.length === 0) return res.status(400).json({ error: 'Nenhuma configuração enviada' })
 
+    // Feature flags exigem ADMINSF
+    const temFeatureFlag = entries.some(([chave]) => chave.startsWith('feature_'))
+    if (temFeatureFlag && req.user?.role !== 'ADMINSF') {
+      return res.status(403).json({ error: 'Apenas AdminSF pode ativar ou desativar funcionalidades' })
+    }
+
     // Sequencial para evitar conflitos com connection_limit=1 (PgBouncer)
     for (const [chave, valor] of entries) {
       await prisma.configuracao.upsert({
