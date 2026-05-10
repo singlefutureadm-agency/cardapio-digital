@@ -1,12 +1,14 @@
 const prisma = require('../lib/prisma')
 
+const STATUS_PEDIDO = ['NOVO', 'PREPARANDO', 'PRONTO', 'ENTREGUE', 'CANCELADO']
+
 const criarPedido = async ({ mesa, itens, userId }) => {
   const menuItems = await prisma.menuItem.findMany({
-    where: { id: { in: itens.map((i) => i.menuItemId) } },
+    where: { id: { in: itens.map((i) => i.menuItemId) }, disponivel: true },
   })
 
   if (menuItems.length !== itens.length) {
-    throw Object.assign(new Error('Item do menu não encontrado'), { status: 404 })
+    throw Object.assign(new Error('Item do menu não encontrado ou indisponível'), { status: 404 })
   }
 
   const itensComPreco = itens.map((item) => {
@@ -96,8 +98,7 @@ const listarPedidos = async () => {
 }
 
 const atualizarStatus = async (id, status) => {
-  const statusValidos = ['NOVO', 'PREPARANDO', 'PRONTO', 'ENTREGUE', 'CANCELADO']
-  if (!statusValidos.includes(status)) {
+  if (!STATUS_PEDIDO.includes(status)) {
     throw Object.assign(new Error('Status inválido'), { status: 400 })
   }
 
@@ -144,5 +145,4 @@ const listarHistorico = async ({ mesa, status, dataInicio, dataFim, page = 1, li
   return { pedidos, total, paginas: Math.ceil(total / limit), page }
 }
 
-// ← apenas um module.exports
-module.exports = { criarPedido, buscarPedido, listarPedidos, atualizarStatus, listarHistorico }
+module.exports = { criarPedido, buscarPedido, listarPedidos, atualizarStatus, listarHistorico, STATUS_PEDIDO }

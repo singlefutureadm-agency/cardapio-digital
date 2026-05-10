@@ -2,14 +2,13 @@ const express = require('express');
 const router = express.Router();
 const svc = require('../services/pagamento.service');
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware');
+const { validate } = require('../middlewares/validate.middleware');
+const { criarPagamentoSchema, fecharMesaSchema } = require('../validators/pagamento.validator');
 
 // Cliente cria pagamento
-router.post('/', authMiddleware, async (req, res, next) => {
+router.post('/', authMiddleware, validate(criarPagamentoSchema), async (req, res, next) => {
   try {
     const { pedidoId, metodo } = req.body;
-    if (!pedidoId || !metodo) {
-      return res.status(400).json({ error: 'pedidoId e metodo são obrigatórios' });
-    }
     const pagamento = await svc.criarPagamento({ pedidoId, metodo });
     res.status(201).json(pagamento);
   } catch (err) {
@@ -58,10 +57,9 @@ router.get('/fechar-conta', authMiddleware, isAdmin, async (req, res, next) => {
 });
 
 // Admin — fecha a conta de uma mesa (confirma pagamentos + marca chamadas atendidas)
-router.post('/fechar-mesa', authMiddleware, isAdmin, async (req, res, next) => {
+router.post('/fechar-mesa', authMiddleware, isAdmin, validate(fecharMesaSchema), async (req, res, next) => {
   try {
     const { mesa, metodo } = req.body;
-    if (!mesa || !metodo) return res.status(400).json({ error: 'mesa e metodo são obrigatórios' });
     const io = req.app.get('io');
     const resultado = await svc.fecharMesa(mesa, metodo, io);
     res.json(resultado);

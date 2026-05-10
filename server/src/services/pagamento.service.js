@@ -92,7 +92,7 @@ async function listarPendentes() {
   });
 }
 
-// Retorna mesas com chamada de garçom pendente + seus pedidos do dia
+// Retorna mesas com chamada de garçom pendente + seus pedidos da sessão atual
 async function listarMesasAbertas() {
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
@@ -102,11 +102,15 @@ async function listarMesasAbertas() {
     orderBy: { createdAt: 'asc' },
   })
 
-  const mesas = []
-  for (const chamada of chamadas) {
-    const todosPedidos = await prisma.pedido.findMany({
+  if (chamadas.length === 0) return []
+
+  const numerosDeMesas = chamadas.map(c => c.mesa)
+
+  // Busca pedidos e última chamada ATENDIDO por mesa (fronteira de sessão) em paralelo
+  const [todosPedidos, ultimasAtendidas] = await Promise.all([
+    prisma.pedido.findMany({
       where: {
-        mesa: chamada.mesa,
+        mesa: { in: numerosDeMesas },
         createdAt: { gte: hoje },
         status: { not: 'CANCELADO' },
       },
@@ -115,16 +119,32 @@ async function listarMesasAbertas() {
         pagamento: { select: { id: true, status: true, metodo: true } },
       },
       orderBy: { createdAt: 'asc' },
-    })
+    }),
+    prisma.chamadaGarcom.findMany({
+      where: { mesa: { in: numerosDeMesas }, status: 'ATENDIDO' },
+      select: { mesa: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ])
 
-    // Exibe apenas pedidos da sessão atual (sem pagamento ou ainda não PAGO)
-    const pedidos = todosPedidos.filter(p => p.pagamento?.status !== 'PAGO')
-    const totalMesa = pedidos.reduce((acc, p) => acc + Number(p.total), 0)
-
-    mesas.push({ mesa: chamada.mesa, chamada, pedidos, totalMesa })
+  // Última chamada ATENDIDO por mesa = início da sessão atual
+  const inicioSessaoPorMesa = {}
+  for (const c of ultimasAtendidas) {
+    if (!inicioSessaoPorMesa[c.mesa]) {
+      inicioSessaoPorMesa[c.mesa] = new Date(c.createdAt)
+    }
   }
 
-  return mesas
+  return chamadas.map(chamada => {
+    const sessaoInicio = inicioSessaoPorMesa[chamada.mesa] || hoje
+    const pedidos = todosPedidos.filter(p =>
+      p.mesa === chamada.mesa &&
+      p.pagamento?.status !== 'PAGO' &&
+      new Date(p.createdAt) >= sessaoInicio
+    )
+    const totalMesa = pedidos.reduce((acc, p) => acc + Number(p.total), 0)
+    return { mesa: chamada.mesa, chamada, pedidos, totalMesa }
+  })
 }
 
 // Fecha a conta de uma mesa: cria/atualiza pagamentos e marca chamadas como atendido
@@ -132,25 +152,46 @@ async function fecharMesa(mesa, metodo, io) {
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
 
-  const pedidos = await prisma.pedido.findMany({
-    where: { mesa, createdAt: { gte: hoje }, status: { not: 'CANCELADO' } },
+  // Usa a última chamada ATENDIDO como fronteira de sessão para não refechar sessões anteriores
+  const ultimaAtendida = await prisma.chamadaGarcom.findFirst({
+    where: { mesa, status: 'ATENDIDO' },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
   })
 
-  for (const pedido of pedidos) {
-    await prisma.pagamento.upsert({
-      where: { pedidoId: pedido.id },
-      update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
-      create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
-    })
-  }
+  const sessaoInicio = ultimaAtendida?.createdAt
+    ? new Date(Math.max(new Date(ultimaAtendida.createdAt).getTime(), hoje.getTime()))
+    : hoje
 
-  const chamadas = await prisma.chamadaGarcom.findMany({
-    where: { mesa, status: 'PENDENTE' },
-  })
+  const [todosPedidos, chamadas] = await Promise.all([
+    prisma.pedido.findMany({
+      where: { mesa, createdAt: { gte: sessaoInicio }, status: { not: 'CANCELADO' } },
+      include: { pagamento: { select: { status: true } } },
+    }),
+    prisma.chamadaGarcom.findMany({
+      where: { mesa, status: 'PENDENTE' },
+    }),
+  ])
 
-  for (const c of chamadas) {
-    await prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })
-    if (io) io.to('cozinha').emit('chamada_atendida', { id: c.id })
+  // Exclui pedidos já pagos de sessões anteriores
+  const pedidos = todosPedidos.filter(p => p.pagamento?.status !== 'PAGO')
+
+  await Promise.all([
+    ...pedidos.map(pedido =>
+      prisma.pagamento.upsert({
+        where: { pedidoId: pedido.id },
+        update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
+        create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
+      })
+    ),
+    ...chamadas.map(c =>
+      prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })
+    ),
+  ])
+
+  if (io) {
+    chamadas.forEach(c => io.to('cozinha').emit('chamada_atendida', { id: c.id }))
+    io.to(`mesa_${mesa}`).emit('mesa_fechada', { mesa })
   }
 
   return {
