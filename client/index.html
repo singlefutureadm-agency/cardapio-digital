@@ -24,6 +24,21 @@
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>
       new window.VLibras.Widget('https://vlibras.gov.br/app');
+
+      // Corrige barra dupla nas URLs das imagens do VLibras (bug do CDN deles)
+      (function fixVLibrasUrls() {
+        var observer = new MutationObserver(function() {
+          document.querySelectorAll('[vw-access-button] img, [vw-plugin-wrapper] img').forEach(function(img) {
+            if (img.src && img.src.includes('//assets/')) {
+              img.src = img.src.replace('//assets/', '/assets/');
+            }
+            if (img.getAttribute('data-src') && img.getAttribute('data-src').includes('//assets/')) {
+              img.setAttribute('data-src', img.getAttribute('data-src').replace('//assets/', '/assets/'));
+            }
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-src'] });
+      })();
     </script>
   </body>
 </html>
