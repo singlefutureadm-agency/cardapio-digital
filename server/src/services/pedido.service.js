@@ -131,20 +131,19 @@ const listarHistorico = async ({ mesa, status, dataInicio, dataFim, page = 1, li
     }
   }
 
-  const [pedidos, total] = await Promise.all([
-    prisma.pedido.findMany({
-      where,
-      include: {
-        itens: { include: { menuItem: { select: { id: true, nome: true } } } },
-        pagamento: true,
-        user: { select: { id: true, nome: true, email: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.pedido.count({ where }),
-  ])
+  // Sequencial — connection_limit=1 (PgBouncer)
+  const pedidos = await prisma.pedido.findMany({
+    where,
+    include: {
+      itens: { include: { menuItem: { select: { id: true, nome: true } } } },
+      pagamento: true,
+      user: { select: { id: true, nome: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
+  })
+  const total = await prisma.pedido.count({ where })
 
   return { pedidos, total, paginas: Math.ceil(total / limit), page }
 }

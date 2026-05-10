@@ -106,26 +106,24 @@ async function listarMesasAbertas() {
 
   const numerosDeMesas = chamadas.map(c => c.mesa)
 
-  // Busca pedidos e última chamada ATENDIDO por mesa (fronteira de sessão) em paralelo
-  const [todosPedidos, ultimasAtendidas] = await Promise.all([
-    prisma.pedido.findMany({
-      where: {
-        mesa: { in: numerosDeMesas },
-        createdAt: { gte: hoje },
-        status: { not: 'CANCELADO' },
-      },
-      include: {
-        itens: { include: { menuItem: { select: { nome: true } } } },
-        pagamento: { select: { id: true, status: true, metodo: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    }),
-    prisma.chamadaGarcom.findMany({
-      where: { mesa: { in: numerosDeMesas }, status: 'ATENDIDO' },
-      select: { mesa: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-    }),
-  ])
+  // Sequencial — connection_limit=1 (PgBouncer) não suporta queries concorrentes
+  const todosPedidos = await prisma.pedido.findMany({
+    where: {
+      mesa: { in: numerosDeMesas },
+      createdAt: { gte: hoje },
+      status: { not: 'CANCELADO' },
+    },
+    include: {
+      itens: { include: { menuItem: { select: { nome: true } } } },
+      pagamento: { select: { id: true, status: true, metodo: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+  const ultimasAtendidas = await prisma.chamadaGarcom.findMany({
+    where: { mesa: { in: numerosDeMesas }, status: 'ATENDIDO' },
+    select: { mesa: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  })
 
   // Última chamada ATENDIDO por mesa = início da sessão atual
   const inicioSessaoPorMesa = {}
@@ -163,31 +161,29 @@ async function fecharMesa(mesa, metodo, io) {
     ? new Date(Math.max(new Date(ultimaAtendida.createdAt).getTime(), hoje.getTime()))
     : hoje
 
-  const [todosPedidos, chamadas] = await Promise.all([
-    prisma.pedido.findMany({
-      where: { mesa, createdAt: { gte: sessaoInicio }, status: { not: 'CANCELADO' } },
-      include: { pagamento: { select: { status: true } } },
-    }),
-    prisma.chamadaGarcom.findMany({
-      where: { mesa, status: 'PENDENTE' },
-    }),
-  ])
+  // Sequencial — connection_limit=1 (PgBouncer)
+  const todosPedidos = await prisma.pedido.findMany({
+    where: { mesa, createdAt: { gte: sessaoInicio }, status: { not: 'CANCELADO' } },
+    include: { pagamento: { select: { status: true } } },
+  })
+  const chamadas = await prisma.chamadaGarcom.findMany({
+    where: { mesa, status: 'PENDENTE' },
+  })
 
   // Exclui pedidos já pagos de sessões anteriores
   const pedidos = todosPedidos.filter(p => p.pagamento?.status !== 'PAGO')
 
-  await Promise.all([
-    ...pedidos.map(pedido =>
-      prisma.pagamento.upsert({
-        where: { pedidoId: pedido.id },
-        update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
-        create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
-      })
-    ),
-    ...chamadas.map(c =>
-      prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })
-    ),
-  ])
+  // Sequencial — connection_limit=1 (PgBouncer) não tolera upserts/updates concorrentes
+  for (const pedido of pedidos) {
+    await prisma.pagamento.upsert({
+      where: { pedidoId: pedido.id },
+      update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
+      create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
+    })
+  }
+  for (const c of chamadas) {
+    await prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })
+  }
 
   if (io) {
     chamadas.forEach(c => io.to('cozinha').emit('chamada_atendida', { id: c.id }))
