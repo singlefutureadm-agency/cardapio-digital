@@ -218,12 +218,14 @@ export default function ConfiguracoesAdmin() {
       Object.entries(form.light).forEach(([k, v]) => { payload[`light_${k}`] = v })
       Object.entries(form.dark).forEach(([k, v])  => { payload[`dark_${k}`]  = v })
       await salvarCores(payload)
-      setMsg({ tipo: 'ok', texto: '✓ Tema salvo em ambos os modos!' })
-    } catch {
-      setMsg({ tipo: 'erro', texto: 'Erro ao salvar. Tente novamente.' })
+      setMsg({ tipo: 'ok', texto: '✓ Tema salvo com sucesso!' })
+    } catch (err) {
+      const detalhe = err?.response?.data?.error || err?.message || 'Erro desconhecido'
+      setMsg({ tipo: 'erro', texto: `Erro ao salvar: ${detalhe}` })
+      console.error('[ConfiguracoesAdmin] Erro ao salvar tema:', err)
     } finally {
       setSalvando(false)
-      setTimeout(() => setMsg(null), 4000)
+      setTimeout(() => setMsg(null), 6000)
     }
   }
 
@@ -233,9 +235,12 @@ export default function ConfiguracoesAdmin() {
     try {
       await resetarCores()
       setMsg({ tipo: 'ok', texto: 'Cores resetadas para o padrão.' })
+    } catch (err) {
+      const detalhe = err?.response?.data?.error || err?.message || 'Erro desconhecido'
+      setMsg({ tipo: 'erro', texto: `Erro ao resetar: ${detalhe}` })
     } finally {
       setSalvando(false)
-      setTimeout(() => setMsg(null), 3000)
+      setTimeout(() => setMsg(null), 5000)
     }
   }
 

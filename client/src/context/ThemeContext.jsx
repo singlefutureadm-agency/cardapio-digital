@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 
 const ThemeContext = createContext(undefined)
@@ -65,7 +65,6 @@ const EXTRAS_LIGHT = {
   '--shadow-lg':    '0 8px 32px rgba(0,0,0,0.12)',
 }
 
-// Converte hex + alpha em rgba
 function hexToRgba(hex, alpha) {
   if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) hex = '#ffffff'
   const r = parseInt(hex.slice(1, 3), 16)
@@ -74,7 +73,6 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha.toFixed(3)})`
 }
 
-// Aplica (ou remove) o efeito glass setando CSS vars + atributo data-glass
 function aplicarGlass(ativo, config = {}) {
   const root = document.documentElement
 
@@ -106,6 +104,11 @@ function aplicarGlass(ativo, config = {}) {
   root.setAttribute('data-glass', 'true')
 }
 
+// Usa ?? em vez de || para não ignorar strings vazias (campo limpo deve usar default)
+function resolveVar(saved, defaultVal) {
+  return (saved && saved.trim() !== '') ? saved : defaultVal
+}
+
 function buildTheme(modo, config) {
   const prefix = modo === 'dark' ? 'dark_' : 'light_'
   const defs   = DEFAULTS[modo]
@@ -114,7 +117,7 @@ function buildTheme(modo, config) {
 
   Object.entries(extras).forEach(([k, v]) => { vars[k] = v })
   Object.entries(VARS_MAP).forEach(([key, cssVar]) => {
-    vars[cssVar] = config[prefix + key] || defs[key]
+    vars[cssVar] = resolveVar(config[prefix + key], defs[key])
   })
 
   return vars
@@ -141,17 +144,22 @@ export function ThemeProvider({ children }) {
   const [config, setConfig]         = useState({})
   const [carregando, setCarregando] = useState(true)
 
+  // Ref sempre com o config mais recente, evita closure stale no toggle()
+  const configRef = useRef({})
+  useEffect(() => { configRef.current = config }, [config])
+
   useEffect(() => {
     const modo = localStorage.getItem('theme') ||
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
-    // Aplica o tema imediatamente (sem customizações) para evitar flash de light mode
     document.documentElement.setAttribute('data-theme', modo)
     aplicarTheme(buildTheme(modo, {}))
 
     api.get('/configuracoes')
       .then(({ data }) => {
         setConfig(data)
+        configRef.current = data
+        document.documentElement.setAttribute('data-theme', modo)
         aplicarTheme(buildTheme(modo, data))
         aplicarGlass(data.glass_enabled === 'true', data)
       })
@@ -164,12 +172,16 @@ export function ThemeProvider({ children }) {
     setTheme(novo)
     localStorage.setItem('theme', novo)
     document.documentElement.setAttribute('data-theme', novo)
-    aplicarTheme(buildTheme(novo, config))
+    // Usa configRef para ter sempre o config mais recente, mesmo sem re-render
+    aplicarTheme(buildTheme(novo, configRef.current))
   }
 
   const salvarCores = async (novasConfigs) => {
     const { data } = await api.post('/configuracoes', novasConfigs)
     setConfig(data)
+    configRef.current = data
+    // Re-aplica tema e glass com os dados recém-salvos
+    document.documentElement.setAttribute('data-theme', theme)
     aplicarTheme(buildTheme(theme, data))
     aplicarGlass(data.glass_enabled === 'true', data)
     return data
@@ -188,8 +200,11 @@ export function ThemeProvider({ children }) {
     reset.glass_text    = ''
     reset.glass_bg_url  = ''
     await api.post('/configuracoes', reset)
-    setConfig({})
-    aplicarTheme(buildTheme(theme, {}))
+    const emptyConfig = {}
+    setConfig(emptyConfig)
+    configRef.current = emptyConfig
+    document.documentElement.setAttribute('data-theme', theme)
+    aplicarTheme(buildTheme(theme, emptyConfig))
     aplicarGlass(false, {})
   }
 
@@ -197,9 +212,8 @@ export function ThemeProvider({ children }) {
     document.documentElement.style.setProperty(cssVar, valor)
   }
 
-  // Preview em tempo real do glass sem salvar
   const previewGlass = (ativo, glassConfig) => {
-    aplicarGlass(ativo, { ...config, ...glassConfig })
+    aplicarGlass(ativo, { ...configRef.current, ...glassConfig })
   }
 
   const features = {

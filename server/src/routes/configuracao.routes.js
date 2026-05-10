@@ -28,13 +28,17 @@ router.get('/', async (req, res, next) => {
 router.post('/', authMiddleware, isAdmin, async (req, res, next) => {
   try {
     const entries = Object.entries(req.body)
-    await Promise.all(entries.map(([chave, valor]) =>
-      prisma.configuracao.upsert({
+    if (entries.length === 0) return res.status(400).json({ error: 'Nenhuma configuração enviada' })
+
+    // Sequencial para evitar conflitos com connection_limit=1 (PgBouncer)
+    for (const [chave, valor] of entries) {
+      await prisma.configuracao.upsert({
         where:  { chave },
         update: { valor: String(valor) },
         create: { chave, valor: String(valor) },
       })
-    ))
+    }
+
     const configs = await prisma.configuracao.findMany()
     res.json(Object.fromEntries(configs.map(c => [c.chave, c.valor])))
   } catch (e) { next(e) }
