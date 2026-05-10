@@ -2,9 +2,28 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../services/api'
 import useCarrinhoStore from '../../store/useCarrinhoStore'
+import { API_BASE } from '../../config'
 
 const ICONES = {
   'Entradas': '🥗', 'Pratos Principais': '🍽️', 'Bebidas': '🥤', 'Sobremesas': '🍮',
+}
+
+function ItemImagem({ item }) {
+  if (!item.imagemUrl) {
+    return (
+      <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+           style={{ background: 'var(--brand-light)' }}>
+        {ICONES[item.categoria?.nome] ?? '🍽️'}
+      </div>
+    )
+  }
+  const src = item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`
+  return (
+    <div className="w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden"
+         style={{ background: 'var(--panel)' }}>
+      <img src={src} alt={item.nome} className="w-full h-full object-cover" loading="lazy" />
+    </div>
+  )
 }
 
 export default function ClienteCardapio() {
@@ -60,49 +79,48 @@ export default function ClienteCardapio() {
             const noCarrinho = itens.find((i) => i.id === item.id)
             return (
               <div key={item.id}
-                   className="rounded-2xl p-4 flex gap-3 transition-all"
-                   style={{ background: 'var(--card)', border: noCarrinho
-                     ? '1.5px solid var(--brand)' : '1px solid var(--border)',
-                     boxShadow: noCarrinho ? '0 0 0 3px var(--brand-light)' : 'none' }}>
-                {/* Ícone */}
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-                     style={{ background: 'var(--brand-light)' }}>
-                  {ICONES[item.categoria?.nome] ?? '🍽️'}
-                </div>
+                   className="rounded-2xl p-3.5 flex gap-3 transition-all"
+                   style={{ background: 'var(--card)',
+                            border: noCarrinho ? '1.5px solid var(--brand)' : '1px solid var(--border)',
+                            boxShadow: noCarrinho ? '0 0 0 3px var(--brand-light)' : 'none' }}>
+                <ItemImagem item={item} />
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{item.nome}</h3>
+                  <h3 className="font-semibold text-sm leading-tight"
+                      style={{ color: 'var(--text-primary)' }}>
+                    {item.nome}
+                  </h3>
                   {item.descricao && (
                     <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-hint)' }}>
                       {item.descricao}
                     </p>
                   )}
-                  <p className="text-sm font-bold mt-1" style={{ color: 'var(--brand)' }}>
+                  <p className="text-sm font-bold mt-1.5" style={{ color: 'var(--brand)' }}>
                     R$ {Number(item.preco).toFixed(2).replace('.', ',')}
                   </p>
                 </div>
                 {/* Controle */}
                 <div className="flex flex-col items-center justify-center flex-shrink-0">
                   {noCarrinho ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <button onClick={() => removerItem(item.id)}
-                              className="w-7 h-7 rounded-full flex items-center justify-center font-semibold"
+                              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg transition-all active:scale-90"
                               style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}>
                         −
                       </button>
-                      <span className="w-4 text-center text-sm font-semibold"
+                      <span className="w-5 text-center text-sm font-bold"
                             style={{ color: 'var(--text-primary)' }}>
                         {noCarrinho.quantidade}
                       </span>
                       <button onClick={() => adicionarItem(item)}
-                              className="w-7 h-7 rounded-full flex items-center justify-center font-semibold"
+                              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg transition-all active:scale-90"
                               style={{ background: 'var(--brand)', color: '#fff' }}>
                         +
                       </button>
                     </div>
                   ) : (
                     <button onClick={() => adicionarItem(item)}
-                            className="w-7 h-7 rounded-full flex items-center justify-center font-semibold"
+                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg transition-all active:scale-90"
                             style={{ background: 'var(--brand)', color: '#fff' }}>
                       +
                     </button>

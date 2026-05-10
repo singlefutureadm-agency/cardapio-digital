@@ -77,7 +77,7 @@ export default function PagamentosPendentes() {
   const toggle = (mesa) => setExpandido(prev => ({ ...prev, [mesa]: !prev[mesa] }))
 
   if (loading) return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-3 p-4 sm:p-6 md:p-8">
       {[1, 2].map(i => (
         <div key={i} className="h-36 rounded-2xl animate-pulse" style={{ background: 'var(--card)' }} />
       ))}
@@ -85,7 +85,7 @@ export default function PagamentosPendentes() {
   )
 
   return (
-    <div className="pt-2">
+    <div className="p-4 sm:p-6 md:p-8">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-5">

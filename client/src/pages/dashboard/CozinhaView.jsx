@@ -47,6 +47,7 @@ export default function CozinhaView() {
   const [agora, setAgora]             = useState(Date.now())
   const [chamadas, setChamadas]       = useState([])
   const [toast, setToast]             = useState(null)
+  const [abaAtiva, setAbaAtiva]       = useState('NOVO')
   const toastRef                      = useRef(null)
 
   // Timer 30s para atualizar os temporizadores dos cards
@@ -133,7 +134,7 @@ export default function CozinhaView() {
       )}
 
       {/* ── Subheader ── */}
-      <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 flex-shrink-0"
            style={{ borderBottom: '1px solid var(--border)' }}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-0.5"
@@ -175,7 +176,7 @@ export default function CozinhaView() {
 
       {/* ── Chamadas de garçom ── */}
       {chamadas.length > 0 && (
-        <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl overflow-hidden"
+        <div className="flex-shrink-0 mx-4 md:mx-6 mt-3 md:mt-4 rounded-2xl overflow-hidden"
              style={{ border: '2px solid var(--warning)' }}>
 
           <div className="flex items-center gap-2 px-4 py-2.5 flex-shrink-0"
@@ -228,13 +229,39 @@ export default function CozinhaView() {
         </div>
       )}
 
+      {/* ── Mobile column tabs ── */}
+      <div className="flex md:hidden flex-shrink-0 px-4 pt-3 pb-2 gap-2"
+           style={{ borderBottom: '1px solid var(--border)' }}>
+        {COLUNAS.map(col => {
+          const count = porStatus(col.status).length
+          const ativa = abaAtiva === col.status
+          return (
+            <button key={col.status} onClick={() => setAbaAtiva(col.status)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all"
+                    style={ativa
+                      ? { background: col.cor, color: '#fff' }
+                      : { background: 'var(--panel)', color: 'var(--text-secondary)' }}>
+              <span>{col.icon}</span>
+              <span>{col.label.split(' ')[0]}</span>
+              {count > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full"
+                      style={{ background: ativa ? 'rgba(255,255,255,0.25)' : col.corBg,
+                               color: ativa ? '#fff' : col.cor, fontSize: 10 }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Kanban ── */}
-      <div className="flex-1 grid grid-cols-3 gap-4 p-6 min-h-0">
+      <div className="flex-1 flex flex-col md:grid md:grid-cols-3 gap-4 p-4 md:p-6 min-h-0">
         {COLUNAS.map(({ status, label, icon, cor, corBg }) => {
           const lista = porStatus(status)
           return (
             <div key={status}
-                 className="flex flex-col rounded-2xl overflow-hidden"
+                 className={`flex-col rounded-2xl overflow-hidden flex-1 ${abaAtiva === status ? 'flex' : 'hidden md:flex'}`}
                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
               {/* Header da coluna */}

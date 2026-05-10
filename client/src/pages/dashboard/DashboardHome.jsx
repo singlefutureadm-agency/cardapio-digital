@@ -71,10 +71,10 @@ export default function DashboardHome() {
   }
 
   const CARDS = stats ? [
-    { label: 'Pedidos em aberto', valor: stats.pedidosAbertos,                                     cor: 'var(--warning)', bg: 'var(--warning-bg)' },
-    { label: 'Faturamento ativo', valor: `R$ ${stats.faturamento.toFixed(2).replace('.', ',')}`,   cor: 'var(--success)', bg: 'var(--success-bg)' },
-    { label: 'Usuários',          valor: stats.usuarios,                                            cor: 'var(--brand)',   bg: 'var(--brand-light)' },
-    { label: 'Itens no cardápio', valor: stats.itensCadapio,                                        cor: 'var(--brand)',   bg: 'var(--brand-light)' },
+    { label: 'Pedidos em aberto', valor: stats.pedidosAbertos,                                     cor: 'var(--warning)', bg: 'var(--warning-bg)', icon: '📋' },
+    { label: 'Faturamento ativo', valor: `R$ ${stats.faturamento.toFixed(2).replace('.', ',')}`,   cor: 'var(--success)', bg: 'var(--success-bg)', icon: '💰' },
+    { label: 'Usuários',          valor: stats.usuarios,                                            cor: 'var(--brand)',   bg: 'var(--brand-light)', icon: '👥' },
+    { label: 'Itens no cardápio', valor: stats.itensCadapio,                                        cor: 'var(--brand)',   bg: 'var(--brand-light)', icon: '🍽️' },
   ] : []
 
   const ATALHOS = [
@@ -84,15 +84,15 @@ export default function DashboardHome() {
   ]
 
   return (
-    <div className="p-8" style={{ color: 'var(--text-primary)', fontFamily: 'DM Sans' }}>
+    <div className="p-4 sm:p-6 md:p-8" style={{ color: 'var(--text-primary)', fontFamily: 'DM Sans' }}>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <p className="text-xs font-semibold uppercase tracking-widest mb-1"
            style={{ color: 'var(--brand)', letterSpacing: '0.12em' }}>
           Dashboard
         </p>
-        <h1 className="font-display text-2xl font-medium" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="font-display text-xl md:text-2xl font-medium" style={{ color: 'var(--text-primary)' }}>
           Visão geral
         </h1>
       </div>
@@ -143,20 +143,25 @@ export default function DashboardHome() {
       )}
 
       {/* Métricas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
         {!stats ? (
           [1, 2, 3, 4].map(i => (
             <div key={i} className="rounded-2xl h-24 animate-pulse"
                  style={{ background: 'var(--card)' }} />
           ))
         ) : CARDS.map((card) => (
-          <div key={card.label} className="rounded-2xl p-5 transition-all hover:scale-[1.02]"
+          <div key={card.label} className="rounded-2xl p-4 md:p-5 transition-all hover:scale-[1.02] active:scale-[0.98]"
                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full" style={{ background: card.cor }} />
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{card.label}</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs leading-tight" style={{ color: 'var(--text-secondary)', maxWidth: '70%' }}>
+                {card.label}
+              </p>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                   style={{ background: card.bg }}>
+                {card.icon}
+              </div>
             </div>
-            <p className="font-display text-2xl font-medium" style={{ color: card.cor }}>
+            <p className="font-display text-xl md:text-2xl font-medium" style={{ color: card.cor }}>
               {card.valor}
             </p>
           </div>
@@ -164,14 +169,14 @@ export default function DashboardHome() {
       </div>
 
       {/* Atalhos */}
-      <div className="mb-5">
+      <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-widest"
            style={{ color: 'var(--text-hint)', letterSpacing: '0.1em' }}>
           Acesso rápido
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         {ATALHOS.map((item) => (
           <button
             key={item.path}

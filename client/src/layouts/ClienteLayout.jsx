@@ -126,19 +126,19 @@ export default function ClienteLayout() {
             const path = to(mesa)
             return (
               <NavLink key={label} to={path} end={end}
-                       className="flex-1 flex flex-col items-center gap-1 py-2.5 transition-all"
+                       className="flex-1 relative flex flex-col items-center gap-1 py-2.5 transition-all"
                        style={({ isActive }) => ({
                          color: isActive ? 'var(--brand)' : 'var(--glass-text, var(--text-hint))',
                        })}>
                 {({ isActive }) => (
                   <>
-                    <span style={{ fontSize: '18px' }}>{icon}</span>
-                    <span style={{ fontSize: '10px', fontWeight: isActive ? '600' : '400',
-                                   letterSpacing: '0.04em' }}>{label}</span>
                     {isActive && (
                       <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
                             style={{ background: 'var(--brand)' }} />
                     )}
+                    <span style={{ fontSize: '19px', lineHeight: 1 }}>{icon}</span>
+                    <span style={{ fontSize: '10px', fontWeight: isActive ? '700' : '400',
+                                   letterSpacing: '0.03em' }}>{label}</span>
                   </>
                 )}
               </NavLink>
