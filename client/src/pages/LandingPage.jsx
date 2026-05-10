@@ -970,7 +970,11 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {itens.map((item) => (
+              {itens.map((item) => {
+                const imgSrc = item.imagemUrl
+                  ? (item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`)
+                  : null
+                return (
                 <div key={item.id}
                      className="menu-card rounded-3xl p-5 flex gap-4 cursor-pointer group transition-all duration-300"
                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}
@@ -979,9 +983,17 @@ export default function LandingPage() {
                      onMouseLeave={(e) => gsap.to(e.currentTarget, { y: 0, duration: 0.4, ease: 'elastic.out(1,0.4)' })}>
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                        style={{ background: isDark ? 'rgba(200,82,10,0.04)' : 'rgba(200,82,10,0.03)', zIndex: 0 }} />
-                  <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                  <div className="relative w-16 h-16 rounded-2xl flex-shrink-0 overflow-hidden"
                        style={{ background: 'var(--brand-light)' }}>
-                    {ICONES[item.categoria?.nome] ?? '🍽️'}
+                    {imgSrc ? (
+                      <img src={imgSrc} alt={item.nome}
+                           className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                           loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl">
+                        {ICONES[item.categoria?.nome] ?? '🍽️'}
+                      </div>
+                    )}
                   </div>
                   <div className="relative flex-1 min-w-0">
                     <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{item.nome}</h3>
@@ -997,7 +1009,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
