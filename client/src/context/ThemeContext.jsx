@@ -136,6 +136,30 @@ function resolveBgUrl(raw) {
   return `${base}${raw}`
 }
 
+function aplicarSiteIdentity(config) {
+  if (config.site_title) document.title = config.site_title
+
+  let meta = document.querySelector('meta[name="description"]')
+  if (config.site_description) {
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.setAttribute('name', 'description')
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute('content', config.site_description)
+  }
+
+  if (config.site_favicon) {
+    let link = document.querySelector('link[rel~="icon"]')
+    if (!link) {
+      link = document.createElement('link')
+      link.setAttribute('rel', 'icon')
+      document.head.appendChild(link)
+    }
+    link.setAttribute('href', config.site_favicon)
+  }
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setTheme]           = useState(() =>
     localStorage.getItem('theme') ||
@@ -162,6 +186,7 @@ export function ThemeProvider({ children }) {
         document.documentElement.setAttribute('data-theme', modo)
         aplicarTheme(buildTheme(modo, data))
         aplicarGlass(data.glass_enabled === 'true', data)
+        aplicarSiteIdentity(data)
       })
       .catch(() => {})
       .finally(() => setCarregando(false))
@@ -180,10 +205,11 @@ export function ThemeProvider({ children }) {
     const { data } = await api.post('/configuracoes', novasConfigs)
     setConfig(data)
     configRef.current = data
-    // Re-aplica tema e glass com os dados recém-salvos
+    // Re-aplica tema, glass e identidade do site com os dados recém-salvos
     document.documentElement.setAttribute('data-theme', theme)
     aplicarTheme(buildTheme(theme, data))
     aplicarGlass(data.glass_enabled === 'true', data)
+    aplicarSiteIdentity(data)
     return data
   }
 

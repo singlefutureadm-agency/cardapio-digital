@@ -99,6 +99,9 @@ export default function ConfiguracoesAdmin() {
   const [glassText, setGlassText]   = useState('')
   const [glassBgUrl, setGlassBgUrl] = useState('')
   const [uploadandoBg, setUploadandoBg] = useState(false)
+  const [siteTitle, setSiteTitle]       = useState('')
+  const [siteDescription, setSiteDescription] = useState('')
+  const [siteFavicon, setSiteFavicon]   = useState('')
   const [aba, setAba]               = useState('tema')
   const [salvando, setSalvando]     = useState(false)
   const [msg, setMsg]               = useState(null)
@@ -117,6 +120,9 @@ export default function ConfiguracoesAdmin() {
     setGlassBlur(parseInt(config.glass_blur ?? 16))
     setGlassText(config.glass_text     || '')
     setGlassBgUrl(config.glass_bg_url  || '')
+    setSiteTitle(config.site_title        || '')
+    setSiteDescription(config.site_description || '')
+    setSiteFavicon(config.site_favicon    || '')
   }, [config])
 
   // Preview em tempo real das configurações de glass
@@ -208,12 +214,15 @@ export default function ConfiguracoesAdmin() {
     setMsg(null)
     try {
       const payload = {
-        glass_enabled: String(glass),
-        glass_color:   glassColor,
-        glass_opacity: String(glassOpacity),
-        glass_blur:    String(glassBlur),
-        glass_text:    glassText,
-        glass_bg_url:  glassBgUrl,
+        glass_enabled:    String(glass),
+        glass_color:      glassColor,
+        glass_opacity:    String(glassOpacity),
+        glass_blur:       String(glassBlur),
+        glass_text:       glassText,
+        glass_bg_url:     glassBgUrl,
+        site_title:       siteTitle,
+        site_description: siteDescription,
+        site_favicon:     siteFavicon,
       }
       Object.entries(form.light).forEach(([k, v]) => { payload[`light_${k}`] = v })
       Object.entries(form.dark).forEach(([k, v])  => { payload[`dark_${k}`]  = v })
@@ -299,6 +308,7 @@ export default function ConfiguracoesAdmin() {
           { key: 'efeitos', label: '✨ Efeitos'  },
           { key: 'modo',    label: '🌓 Modo'    },
           { key: 'preview', label: '👁 Preview' },
+          { key: 'site',    label: '🌐 Site'    },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setAba(key)}
                   className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
@@ -694,6 +704,137 @@ export default function ConfiguracoesAdmin() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── ABA SITE ── */}
+      {aba === 'site' && (
+        <div className="space-y-5 max-w-2xl">
+
+          {/* Título */}
+          <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1"
+                 style={{ color: 'var(--text-hint)', letterSpacing: '0.1em' }}>
+                Identidade do Site
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Aplica-se ao título da aba, metadados e favicon do navegador.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2 uppercase tracking-widest"
+                     style={{ color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>
+                Título do site
+              </label>
+              <input
+                value={siteTitle}
+                onChange={e => setSiteTitle(e.target.value)}
+                placeholder="Ex: Restaurante do Chef · Cardápio Digital"
+                className="w-full text-sm rounded-xl px-4 py-3 outline-none"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'DM Sans' }}
+                onFocus={e => e.target.style.borderColor = 'var(--brand)'}
+                onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+              />
+              <p className="text-xs mt-1.5" style={{ color: 'var(--text-hint)' }}>
+                Aparece na aba do navegador e nos resultados de pesquisa.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2 uppercase tracking-widest"
+                     style={{ color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>
+                Descrição (meta description)
+              </label>
+              <textarea
+                value={siteDescription}
+                onChange={e => setSiteDescription(e.target.value)}
+                placeholder="Ex: Faça seu pedido online, acompanhe em tempo real e pague com Pix."
+                rows={3}
+                className="w-full text-sm rounded-xl px-4 py-3 outline-none resize-none"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'DM Sans' }}
+                onFocus={e => e.target.style.borderColor = 'var(--brand)'}
+                onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+              />
+              <p className="text-xs mt-1.5" style={{ color: 'var(--text-hint)' }}>
+                Exibida em resultados de pesquisa e compartilhamentos. Recomendado: 120–160 caracteres.{' '}
+                <span style={{ color: siteDescription.length > 160 ? 'var(--danger)' : 'var(--text-hint)' }}>
+                  {siteDescription.length}/160
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Favicon */}
+          <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1"
+                 style={{ color: 'var(--text-hint)', letterSpacing: '0.1em' }}>
+                Favicon
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Ícone exibido na aba do navegador. Use uma URL pública (PNG, SVG, ICO).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Preview do favicon */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                   style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                {siteFavicon ? (
+                  <img src={siteFavicon} alt="favicon"
+                       className="w-8 h-8 object-contain rounded"
+                       onError={e => { e.target.style.display = 'none' }} />
+                ) : (
+                  <span style={{ fontSize: '22px' }}>🌐</span>
+                )}
+              </div>
+
+              <input
+                value={siteFavicon}
+                onChange={e => setSiteFavicon(e.target.value)}
+                placeholder="https://exemplo.com/favicon.png"
+                className="flex-1 text-sm rounded-xl px-4 py-3 outline-none"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'DM Sans' }}
+                onFocus={e => e.target.style.borderColor = 'var(--brand)'}
+                onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+
+            <div className="rounded-xl px-4 py-3"
+                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                Dica: usar imagem do Supabase Storage
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-hint)' }}>
+                Faça upload do ícone no bucket do Supabase e cole a URL pública aqui.
+                Formatos recomendados: SVG, PNG 32×32 ou 64×64, ICO.
+              </p>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4"
+               style={{ color: 'var(--text-hint)', letterSpacing: '0.1em' }}>
+              Preview — aba do navegador
+            </p>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl w-fit"
+                 style={{ background: 'var(--surface)', border: '1px solid var(--border)', maxWidth: '100%' }}>
+              {siteFavicon ? (
+                <img src={siteFavicon} alt="" className="w-4 h-4 object-contain flex-shrink-0"
+                     onError={e => { e.target.style.display = 'none' }} />
+              ) : (
+                <span style={{ fontSize: '14px', flexShrink: 0 }}>🌐</span>
+              )}
+              <span className="text-sm truncate" style={{ color: 'var(--text-primary)', maxWidth: '280px' }}>
+                {siteTitle || 'Cardápio Digital'}
+              </span>
+              <span className="text-xs flex-shrink-0" style={{ color: 'var(--text-hint)' }}>✕</span>
+            </div>
+          </div>
+
         </div>
       )}
 
