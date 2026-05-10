@@ -73,6 +73,7 @@ function GrupoNav({ item, collapsed, glass }) {
       <button
         onClick={() => !collapsed && setAberto(a => !a)}
         title={collapsed ? item.label : undefined}
+        aria-expanded={!collapsed ? aberto : undefined}
         style={{
           width: '100%',
           display: 'flex',
@@ -236,6 +237,7 @@ export default function DashboardLayout() {
         {isMobile && (
           <button
             onClick={() => setMobileMenuOpen(false)}
+            aria-label="Fechar menu"
             className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center text-xs"
             style={{ color: 'var(--text-secondary)', background: 'var(--panel)' }}
           >
@@ -245,7 +247,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2" style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto py-3 px-2" style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
         {NAV.map((item) => {
           if (item.grupo) {
             return <GrupoNav key={item.label} item={item} collapsed={!isMobile && collapsed} glass={glass} />
@@ -338,6 +340,9 @@ export default function DashboardLayout() {
 
       {/* Mobile drawer */}
       <aside
+        id="mobile-sidebar"
+        aria-label="Menu de navegação"
+        aria-hidden={!mobileMenuOpen}
         className="glass-panel fixed inset-y-0 left-0 z-50 flex flex-col md:hidden transition-transform duration-300"
         style={{
           width: 260,
@@ -350,6 +355,7 @@ export default function DashboardLayout() {
 
       {/* Desktop sidebar */}
       <aside
+        aria-label="Menu lateral"
         className="glass-panel relative z-10 flex-col flex-shrink-0 transition-all duration-300 hidden md:flex"
         style={{ width: collapsed ? 64 : 220, ...sidebarStyle }}
       >
@@ -365,7 +371,9 @@ export default function DashboardLayout() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
               style={{ color: 'var(--text-secondary)', background: 'var(--surface)' }}
-              aria-label="Abrir menu"
+              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-sidebar"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <rect y="2"  width="18" height="2" rx="1" fill="currentColor"/>

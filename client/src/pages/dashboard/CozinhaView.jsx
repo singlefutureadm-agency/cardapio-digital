@@ -48,6 +48,7 @@ export default function CozinhaView() {
   const [chamadas, setChamadas]       = useState([])
   const [toast, setToast]             = useState(null)
   const [abaAtiva, setAbaAtiva]       = useState('NOVO')
+  const [liveMsg, setLiveMsg]         = useState('')
   const toastRef                      = useRef(null)
 
   // Timer 30s para atualizar os temporizadores dos cards
@@ -75,6 +76,7 @@ export default function CozinhaView() {
       adicionarPedido(pedido)
       beep(880, 0.18, 1)
       showToast('pedido', `Novo pedido — Mesa ${pedido.mesa}`)
+      setLiveMsg(`Novo pedido recebido da mesa ${pedido.mesa}`)
       if (Notification.permission === 'granted')
         new Notification('🍽️ Novo pedido!', { body: `Mesa ${pedido.mesa}` })
     })
@@ -85,6 +87,7 @@ export default function CozinhaView() {
       setChamadas(prev => [chamada, ...prev])
       beep(660, 0.2, 2, 0.3) // 2 beeps distintos para garçom
       showToast('garcom', `Mesa ${chamada.mesa} chamou o garçom — ${METODO_LABEL[chamada.metodo] ?? chamada.metodo}`)
+      setLiveMsg(`Garçom chamado pela mesa ${chamada.mesa}`)
       if (Notification.permission === 'granted')
         new Notification('🛎️ Garçom chamado!', { body: `Mesa ${chamada.mesa} · ${METODO_LABEL[chamada.metodo] ?? chamada.metodo}` })
     })
@@ -112,6 +115,12 @@ export default function CozinhaView() {
   return (
     <div className="flex flex-col h-full" style={{ fontFamily: 'DM Sans', position: 'relative', overflow: 'hidden' }}>
 
+      {/* Live region para leitores de tela */}
+      <div aria-live="assertive" aria-atomic="true"
+           style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        {liveMsg}
+      </div>
+
       {/* ── Toast ── */}
       {toast && (
         <div key={toast.key}
@@ -127,6 +136,7 @@ export default function CozinhaView() {
           </span>
           <span className="text-sm font-semibold leading-snug flex-1">{toast.msg}</span>
           <button onClick={() => setToast(null)}
+                  aria-label="Fechar notificação"
                   style={{ opacity: 0.75, fontSize: 18, flexShrink: 0, lineHeight: 1 }}>
             ✕
           </button>
@@ -163,6 +173,7 @@ export default function CozinhaView() {
 
           <input
             type="text"
+            aria-label="Filtrar por mesa"
             placeholder="Filtrar mesa..."
             value={filtroMesa}
             onChange={(e) => setFiltroMesa(e.target.value)}
@@ -261,6 +272,8 @@ export default function CozinhaView() {
           const lista = porStatus(status)
           return (
             <div key={status}
+                 role="region"
+                 aria-label={label}
                  className={`flex-col rounded-2xl overflow-hidden flex-1 ${abaAtiva === status ? 'flex' : 'hidden md:flex'}`}
                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
