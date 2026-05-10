@@ -468,12 +468,16 @@ textarea:focus {
   word-spacing:   0.1em  !important;
 }
 
-/* Sublinhar links — cobre <a> inline e <a display:flex> (NavLink) */
+/* Sublinhar links */
 [data-a11y-links] a,
-[data-a11y-links] a > span,
-[data-a11y-links] a > p {
-  text-decoration:       underline !important;
-  text-underline-offset: 3px      !important;
+[data-a11y-links] a > * {
+  text-decoration:           underline !important;
+  text-decoration-thickness: 1px       !important;
+  text-underline-offset:     3px       !important;
+}
+[data-a11y-links] a svg,
+[data-a11y-links] a svg * {
+  text-decoration: none !important;
 }
 
 /* Focus visível globalmente (WCAG 2.4.7) */
