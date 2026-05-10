@@ -201,6 +201,15 @@ Tela full-screen para exibição em monitores ou TVs (`/menu-tv`), com carrossel
 ### Tema Customizável
 O admin configura as cores do tema (light/dark), ativa o **glass effect** com cor, opacidade e blur ajustáveis, e faz upload de imagem de fundo. As cores propagam para todo o site — incluindo o cursor animado — via CSS Custom Properties.
 
+Na aba **🌐 Site** das Configurações é possível definir título da aba, meta description e URL do favicon — aplicados dinamicamente sem reload.
+
+### Acessibilidade
+- **Barra de acessibilidade** flutuante (canto direito) com tamanho de texto (4 níveis), alto contraste, espaçamento WCAG 1.4.12 e sublinhado de links — preferências salvas no `localStorage`
+- **VLibras** (Gov.br) para tradução em Língua Brasileira de Sinais
+- **Skip link** para navegação por teclado (WCAG 2.4.1)
+- **ARIA landmarks** completos nos layouts: `role="dialog"`, `aria-expanded`, `aria-live`, `aria-label` em sidebars, navs e colunas kanban
+- **Focus visible** e `prefers-reduced-motion` aplicados globalmente
+
 ---
 
 ## Roles e Permissões
@@ -260,21 +269,31 @@ Cliente escolhe Pix no checkout
 
 ## Testes Automatizados
 
-O projeto possui **60+ testes** em `server/src/__tests__/`:
+O projeto possui **107 testes** distribuídos entre backend e frontend.
+
+**Backend — 80 testes** (`server/src/__tests__/` — Jest + supertest):
 
 | Arquivo | Cobertura |
 |---|---|
 | `auth.middleware.test.js` | authMiddleware, isAdmin, isAdminSF |
 | `auth.service.test.js` | login, register, validações |
 | `pedido.service.test.js` | criação de pedidos, listagem, status |
-| `pedido.service.extra.test.js` | listarMesasAbertas, fechar conta, edge cases |
+| `pedido.service.extra.test.js` | listarMesasAbertas, fechar conta, filtro diário |
 | `pagamento.service.test.js` | pagamentos, confirmação PIX, pendentes |
 | `clientePedidos.filter.test.js` | isolamento de pedidos por sessão |
-| `configuracao.route.test.js` | GET/POST configurações, auth, erros |
+| `configuracao.route.test.js` | GET/POST configurações, cache hit/miss, auth |
 | `prisma.lib.test.js` | singleton PrismaClient, parâmetros PgBouncer |
+| `rateLimiter.test.js` | 429 após exceder limites login/register/api |
+
+**Frontend — 27 testes** (`client/src/test/` — Vitest + React Testing Library):
+
+| Arquivo | Cobertura |
+|---|---|
+| `AcessibilidadeWidget.test.jsx` | renderização, tamanho texto, contraste, espaçamento, links, reset, ARIA |
 
 ```bash
-cd server && npm test
+cd server && npm test          # backend
+cd client && npm test          # frontend (vitest run)
 ```
 
 ---
@@ -399,6 +418,9 @@ No Render, adicione `FRONTEND_URL=https://seu-app.vercel.app` e salve — redepl
 - [ ] Menu TV (`/menu-tv`) exibe o cardápio
 - [ ] ADMINSF consegue ligar/desligar features em Configurações → Funcionalidades
 - [ ] Tema salvo propaga para todo o site (cursor, glass, imagem de fundo)
+- [ ] Barra de acessibilidade funciona (tamanho, contraste, links sublinhados)
+- [ ] VLibras carrega e exibe o botão de Libras
+- [ ] `/health` retorna `{ status: 'ok' }`
 
 ---
 

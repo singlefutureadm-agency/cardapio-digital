@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(grep *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Read(//mnt/c/Users/Miguel/cardapio-digital/**)",
+      "Bash(npx prisma *)",
+      "PowerShell(claude doctor *)",
+      "Bash(git commit *)",
+      "Bash(node -e \"const pkg = require\\('./package.json'\\); pkg.scripts.test = 'jest'; pkg.jest = { testEnvironment: 'node' }; require\\('fs'\\).writeFileSync\\('./package.json', JSON.stringify\\(pkg, null, 2\\)\\)\")",
+      "Bash(npm test *)",
+      "Bash(xargs ls -la)",
+      "Bash(npx vite *)",
+      "Bash(git -C /c/Users/Miguel/cardapio-digital add client/src/pages/LandingPage.jsx)",
+      "Bash(git -C /c/Users/Miguel/cardapio-digital commit -m ' *)",
+      "Bash(git -C /c/Users/Miguel/cardapio-digital push origin main)",
+      "Bash(findstr /R \"background.*#\\\\|color.*#\\\\|borderColor.*#\" *.jsx cliente\\\\*.jsx dashboard\\\\*.jsx)",
+      "Bash(npx jest *)",
+      "Bash(npm install *)",
+      "Bash(node *)"
     ]
   }
 }

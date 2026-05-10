@@ -104,7 +104,7 @@ export default function AcessibilidadeWidget() {
           aria-modal="false"
           aria-label="Opções de acessibilidade"
           style={{
-            position: 'absolute', bottom: 56, right: 0, width: 272,
+            position: 'absolute', bottom: 40, right: 0, width: 272,
             background: 'var(--card)', border: '1px solid var(--border)',
             borderRadius: 16, padding: 16,
             boxShadow: '0 8px 40px rgba(0,0,0,0.28)',

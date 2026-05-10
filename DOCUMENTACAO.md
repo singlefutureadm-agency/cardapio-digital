@@ -3,7 +3,7 @@
 Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard administrativo,
 área do cliente, pagamento Pix, calendário de shows, analytics e sistema de feature flags.
 
-Última atualização: 2026-05-10
+Última atualização: 2026-05-10 (sessão 2)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -17,13 +17,15 @@ Sistema fullstack de cardápio digital com pedidos em tempo real, dashboard admi
   6. BANCO DE DADOS (PostgreSQL + Prisma)
   7. STORAGE DE IMAGENS (Supabase Storage)
   8. SISTEMA DE TEMA (ThemeContext)
-  9. TESTES AUTOMATIZADOS
- 10. Variáveis de Ambiente
- 11. Comandos de Desenvolvimento
- 12. PASSO A PASSO — Publicação em Produção
- 13. Arquitetura de Produção
- 14. Credenciais e Acessos
- 15. Observações Importantes
+  9. ACESSIBILIDADE (a11y)
+ 10. ESCALABILIDADE E PERFORMANCE
+ 11. TESTES AUTOMATIZADOS
+ 12. Variáveis de Ambiente
+ 13. Comandos de Desenvolvimento
+ 14. PASSO A PASSO — Publicação em Produção
+ 15. Arquitetura de Produção
+ 16. Credenciais e Acessos
+ 17. Observações Importantes
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -61,9 +63,10 @@ Fluxo principal:
   │       ├── config/
   │       │   └── index.js            → API_BASE e API_URL centralizados
   │       ├── components/
-  │       │   ├── GlobalCursor.jsx    → cursor animado GSAP, cor via var(--brand)
-  │       │   ├── ProtectedRoute.jsx  → adminOnly, adminSFOnly props
-  │       │   ├── SFFooter.jsx        → Rodapé Single Future (todas as páginas)
+  │       │   ├── GlobalCursor.jsx        → cursor animado GSAP, cor via var(--brand)
+  │       │   ├── ProtectedRoute.jsx      → adminOnly, adminSFOnly props
+  │       │   ├── SFFooter.jsx            → Rodapé Single Future (todas as páginas)
+  │       │   ├── AcessibilidadeWidget.jsx → barra a11y flutuante (bottom:55% right:9px)
   │       │   ├── ThemeToggle.jsx
   │       │   ├── CarrinhoFlutuante.jsx
   │       │   ├── ItemCard.jsx
@@ -120,17 +123,19 @@ Fluxo principal:
   │   │   ├── app.js                  → Express, CORS dinâmico, middlewares, rotas
   │   │   ├── server.js               → HTTP server + Socket.io
   │   │   ├── lib/
-  │   │   │   └── prisma.js           → PrismaClient singleton (compartilhado por todos)
+  │   │   │   ├── prisma.js           → PrismaClient singleton (compartilhado por todos)
+  │   │   │   └── configCache.js      → cache em memória TTL 30s para configurações
   │   │   ├── controllers/            → lógica dos endpoints
   │   │   ├── middlewares/
   │   │   │   ├── auth.middleware.js  → authMiddleware, isAdmin, isAdminSF
   │   │   │   ├── error.middleware.js
-  │   │   │   └── validate.middleware.js
+  │   │   │   ├── validate.middleware.js
+  │   │   │   └── rateLimiter.js      → express-rate-limit: login/register/api
   │   │   ├── routes/                 → definição das rotas HTTP
   │   │   ├── services/               → regras de negócio (todos importam lib/prisma)
   │   │   │   └── storage.service.js  → uploadFile/deleteFile (Supabase Storage)
   │   │   ├── validators/             → schemas Zod
-  │   │   └── __tests__/              → 60+ testes Jest + supertest
+  │   │   └── __tests__/              → 80 testes Jest + supertest
   │   ├── prisma/
   │   │   ├── schema.prisma           → schema completo (relationMode="prisma")
   │   │   ├── seed.js
@@ -563,7 +568,144 @@ Fluxo principal:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 9. TESTES AUTOMATIZADOS
+## 9. ACESSIBILIDADE (a11y)
+
+### AcessibilidadeWidget (client/src/components/AcessibilidadeWidget.jsx)
+
+  Barra flutuante de acessibilidade — position: fixed; bottom: 55%; right: 9px; z-index: 9998
+
+  Recursos:
+    Tamanho de texto   → 4 níveis (100% / 112% / 125% / 140%) via html.style.fontSize
+    Alto contraste     → data-a11y-contrast no <html> → CSS redefine todas as vars de cor
+    Espaçamento        → data-a11y-spacing → WCAG 1.4.12 (letter/word/line spacing)
+    Sublinhar links    → data-a11y-links → a, a > * { text-decoration: underline }
+                         Selector a > * necessário pois NavLinks têm display:flex
+
+  Persistência: localStorage (a11y_tamanho, a11y_contraste, a11y_espacamento, a11y_links)
+  UX: fecha com Escape e com mousedown fora do painel
+  ARIA: role="dialog", aria-modal="false", aria-pressed, aria-expanded, aria-haspopup
+
+### VLibras (Gov.br) — client/index.html
+
+  Widget oficial de Língua Brasileira de Sinais do governo federal.
+  Carregado via CDN: https://vlibras.gov.br/app/vlibras-plugin.js
+
+  Bug corrigido: o VLibras gera URLs com barra dupla (app//assets/) que o CDN não normaliza.
+  Solução: MutationObserver no index.html que detecta e corrige a barra dupla antes da requisição.
+
+  CSS de suporte (index.css):
+    [vw-access-button] { overflow: hidden }
+    [vw-access-button] img { font-size: 0; color: transparent } ← oculta alt text visual
+
+### CSS de Acessibilidade (client/src/index.css)
+
+  .skip-link
+    → Link "Ir para o conteúdo principal" — position: fixed; top: -120px
+    → Visível apenas no foco (:focus { top: 0 }) — WCAG 2.4.1
+    → Declarado em App.jsx antes de qualquer conteúdo
+
+  [data-a11y-contrast]
+    → Modo alto contraste: fundo preto, texto branco, brand amarelo vivo
+    → Reverte todas as CSS vars de superfície, texto e marca
+    → backdrop-filter: none (performance + legibilidade)
+
+  [data-a11y-spacing] *
+    → letter-spacing: 0.12em, word-spacing: 0.16em, line-height: 1.8, margin-bottom: 0.5em
+
+  [data-a11y-links] a, [data-a11y-links] a > *
+    → text-decoration: underline !important
+    → text-decoration-thickness: 1px; text-underline-offset: 3px
+    → a > * necessário para NavLinks (display:flex) onde o underline só renderiza nos filhos
+
+  :focus-visible
+    → outline: 3px solid var(--brand); outline-offset: 3px — WCAG 2.4.7
+
+  @media (prefers-reduced-motion: reduce)
+    → animation: none; transition: none para todos os elementos — WCAG 2.3.3
+
+### ARIA Landmarks
+
+  DashboardLayout.jsx:
+    - <aside id="mobile-sidebar" aria-label="Menu de navegação" aria-hidden={!mobileMenuOpen}>
+    - <aside aria-label="Menu lateral"> (desktop)
+    - <nav aria-label="Navegação principal">
+    - GrupoNav button: aria-expanded={aberto}
+    - Hamburger: aria-expanded, aria-controls="mobile-sidebar", aria-label dinâmico
+    - Botão fechar drawer: aria-label="Fechar menu"
+
+  ClienteLayout.jsx:
+    - <nav aria-label="Navegação do cliente"> (bottom nav)
+    - NavLink já gerencia aria-current="page" automaticamente (React Router DOM)
+
+  CozinhaView.jsx:
+    - <div aria-live="assertive" aria-atomic="true"> — anuncia novos pedidos e chamadas de garçom
+    - Colunas kanban: role="region" + aria-label={label}
+    - Input de filtro: aria-label="Filtrar por mesa"
+    - Botão fechar toast: aria-label="Fechar notificação"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 10. ESCALABILIDADE E PERFORMANCE
+
+### Cache de Configurações (server/src/lib/configCache.js)
+
+  Singleton em memória com TTL de 30 segundos.
+
+  Interface:
+    get()         → retorna dados se válidos (< 30s), null caso contrário
+    set(data)     → armazena dados e marca timestamp
+    invalidate()  → limpa cache
+
+  Estratégia de invalidação:
+    - Reads (GET /api/configuracoes): cache hit → skip DB; cache miss → lê DB, seta cache
+    - Writes (POST /, POST /fundo, DELETE /fundo): seta cache com dados frescos pós-upsert
+      → próximo GET é sempre cache hit (não há "warm-up delay")
+
+### Rate Limiting (server/src/middlewares/rateLimiter.js)
+
+  Biblioteca: express-rate-limit v8
+  Headers: standardHeaders 'draft-7' (RateLimit-Policy, RateLimit), legacyHeaders: false
+  Resposta 429: JSON { error: 'Muitas tentativas...' }
+
+  Limites:
+    limiterLogin    → 10 requisições por 15 minutos (POST /api/auth/login)
+    limiterRegister → 5 requisições por hora (POST /api/auth/register)
+    limiterApi      → 200 requisições por minuto (app.use('/api', ...))
+
+  /health está fora do prefixo /api — não é limitado (Render health check).
+
+### Health Check (server/src/app.js)
+
+  GET /health → { status: 'ok', uptime: process.uptime() }
+  Registrado antes dos middlewares de rota.
+  Usado pelo Render para verificar disponibilidade do serviço.
+
+### Queries Sequenciais com PgBouncer
+
+  Todos os Promise.all com Prisma foram convertidos para for...of await:
+
+    fecharMesa (pagamento.service.js):
+      - Lê pedidos e chamadas com awaits separados (não paralelos)
+      - Upserts de Pagamento: for...of com await
+      - Updates de ChamadaGarcom: for...of com await
+
+    listarMesasAbertas (pagamento.service.js):
+      - pedido.findMany e chamadaGarcom.findMany em awaits separados
+
+    listarHistorico (pedido.service.js):
+      - findMany e count em awaits separados
+
+  Razão: PgBouncer com connection_limit=1 não suporta queries paralelas.
+  Promise.all causa saturação da fila de conexões.
+
+### Filtro Diário de Pedidos (pedido.service.js)
+
+  listarPedidos() limita a pedidos criados hoje (createdAt >= meia-noite do dia atual).
+  Evita que a listagem da cozinha cresça indefinidamente com pedidos históricos.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 11. TESTES AUTOMATIZADOS
 
   Framework: Jest + supertest
   Diretório: server/src/__tests__/
