@@ -95,7 +95,7 @@ export default function AcessibilidadeWidget() {
   return (
     <div
       ref={panelRef}
-      style={{ position: 'fixed', bottom: 80, right: 24, zIndex: 9998, fontFamily: 'DM Sans' }}
+      style={{ position: 'fixed', bottom: '55%', right: 9, zIndex: 9998, fontFamily: 'DM Sans' }}
     >
       {/* ── Painel ── */}
       {aberto && (
