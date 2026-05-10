@@ -965,7 +965,7 @@ export default function LandingPage() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[1,2,3].map(i => (
-                <div key={i} className="rounded-3xl h-36 animate-pulse" style={{ background: 'var(--surface)' }} />
+                <div key={i} className="rounded-3xl animate-pulse" style={{ background: 'var(--surface)', aspectRatio: '4/3' }} />
               ))}
             </div>
           ) : (
@@ -975,41 +975,91 @@ export default function LandingPage() {
                   ? (item.imagemUrl.startsWith('http') ? item.imagemUrl : `${API_BASE}${item.imagemUrl}`)
                   : null
                 return (
-                <div key={item.id}
-                     className="menu-card rounded-3xl p-5 flex gap-4 cursor-pointer group transition-all duration-300"
-                     style={{ background: 'var(--surface)', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}
-                     onClick={() => navigate(user ? '/mesa/1' : '/login')}
-                     onMouseEnter={(e) => gsap.to(e.currentTarget, { y: -5, duration: 0.3, ease: 'power2.out' })}
-                     onMouseLeave={(e) => gsap.to(e.currentTarget, { y: 0, duration: 0.4, ease: 'elastic.out(1,0.4)' })}>
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                       style={{ background: isDark ? 'rgba(200,82,10,0.04)' : 'rgba(200,82,10,0.03)', zIndex: 0 }} />
-                  <div className="relative w-16 h-16 rounded-2xl flex-shrink-0 overflow-hidden"
-                       style={{ background: 'var(--brand-light)' }}>
+                  <div key={item.id}
+                       className="menu-card group cursor-pointer"
+                       style={{ borderRadius: 24, overflow: 'hidden', position: 'relative', aspectRatio: '4/3', border: '1px solid var(--border)' }}
+                       onClick={() => navigate(user ? '/mesa/1' : '/login')}
+                       onMouseEnter={(e) => {
+                         gsap.to(e.currentTarget.querySelector('.mc-img'), { scale: 1.07, duration: 0.6, ease: 'power2.out' })
+                         gsap.to(e.currentTarget.querySelector('.mc-overlay'), { opacity: 1, duration: 0.3 })
+                       }}
+                       onMouseLeave={(e) => {
+                         gsap.to(e.currentTarget.querySelector('.mc-img'), { scale: 1, duration: 0.7, ease: 'power2.out' })
+                         gsap.to(e.currentTarget.querySelector('.mc-overlay'), { opacity: 0, duration: 0.3 })
+                       }}>
+
+                    {/* Imagem ou placeholder ocupando card inteiro */}
                     {imgSrc ? (
-                      <img src={imgSrc} alt={item.nome}
-                           className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
-                           loading="lazy" />
+                      <img className="mc-img"
+                           src={imgSrc} alt={item.nome} loading="lazy"
+                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', willChange: 'transform' }}
+                           onError={(e) => { e.currentTarget.style.display = 'none' }} />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl">
+                      <div style={{
+                        position: 'absolute', inset: 0, background: 'var(--brand-light)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem',
+                      }}>
                         {ICONES[item.categoria?.nome] ?? '🍽️'}
                       </div>
                     )}
-                  </div>
-                  <div className="relative flex-1 min-w-0">
-                    <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{item.nome}</h3>
-                    <p className="text-xs mt-0.5 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-hint)' }}>
-                      {item.descricao}
-                    </p>
-                    <div className="flex items-center justify-between mt-2.5">
-                      <p className="text-sm font-extrabold" style={{ color: 'var(--brand)' }}>
-                        R$ {Number(item.preco).toFixed(2).replace('.', ',')}
-                      </p>
-                      <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            style={{ color: 'var(--brand)' }}>Pedir →</span>
+
+                    {/* Gradiente permanente para legibilidade */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: imgSrc
+                        ? 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.04) 100%)'
+                        : 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
+                    }} />
+
+                    {/* Overlay hover sutil */}
+                    <div className="mc-overlay" style={{
+                      position: 'absolute', inset: 0, opacity: 0,
+                      background: 'rgba(200,82,10,0.12)',
+                    }} />
+
+                    {/* Acento brand no topo */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'var(--brand)', zIndex: 2 }} />
+
+                    {/* Conteúdo sobre a imagem */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 20px 18px', zIndex: 2 }}>
+                      <h3 style={{
+                        color: '#fff', fontFamily: 'DM Sans', fontWeight: 700,
+                        fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)',
+                        margin: '0 0 4px', whiteSpace: 'nowrap',
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                      }}>{item.nome}</h3>
+
+                      {item.descricao && (
+                        <p style={{
+                          color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '0 0 10px',
+                          fontFamily: 'DM Sans', lineHeight: 1.4,
+                          display: '-webkit-box', WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        }}>{item.descricao}</p>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <p style={{
+                          color: 'var(--brand)', fontFamily: 'DM Sans', fontWeight: 800,
+                          fontSize: 'clamp(1.1rem, 1.6vw, 1.3rem)', margin: 0,
+                          textShadow: '0 2px 12px rgba(200,82,10,0.45)',
+                        }}>
+                          R$ {Number(item.preco).toFixed(2).replace('.', ',')}
+                        </p>
+                        <span style={{
+                          background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
+                          color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+                          fontSize: 11, fontWeight: 700, padding: '4px 12px',
+                          borderRadius: 99, fontFamily: 'DM Sans', letterSpacing: '0.04em',
+                        }}>
+                          Pedir →
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )})}
+                )
+              })}
             </div>
           )}
         </div>
