@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -18,6 +18,14 @@ export default function ClienteLayout() {
   const { isDark, glass, bgUrl } = useTheme()
   const navigate = useNavigate()
   const { mesa } = useParams()
+
+  // Marca o início da sessão desta mesa (usado em ClientePedidos para isolar pedidos)
+  useEffect(() => {
+    const key = `sessao_${mesa}`
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, Date.now().toString())
+    }
+  }, [mesa])
 
   const handleLogout = () => { logout(); navigate('/login') }
 

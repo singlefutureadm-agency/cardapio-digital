@@ -11,8 +11,8 @@ const STATUS = {
   CANCELADO:  { label: 'Cancelado',  icon: '❌',  cor: 'var(--danger)',   bg: 'var(--danger-bg)',  pulsa: false },
 }
 
-function hoje() {
-  return new Date().toDateString()
+function getSessaoInicio(mesa) {
+  return Number(sessionStorage.getItem(`sessao_${mesa}`)) || Date.now()
 }
 
 export default function ClientePedidos() {
@@ -21,19 +21,21 @@ export default function ClientePedidos() {
   const [pedidos, setPedidos] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Carrega pedidos da mesa de hoje
-  useEffect(() => {
+  const carregarPedidos = () => {
+    const sessaoInicio = getSessaoInicio(mesa)
     api.get('/cliente/pedidos').then(({ data }) => {
       setPedidos(
         data.filter(p =>
           p.mesa === mesa &&
-          new Date(p.createdAt).toDateString() === hoje() &&
-          p.pagamento?.status !== 'PAGO'
+          new Date(p.createdAt).getTime() >= sessaoInicio
         )
       )
       setLoading(false)
     })
-  }, [mesa])
+  }
+
+  // Carrega pedidos da sessão atual
+  useEffect(() => { carregarPedidos() }, [mesa])
 
   // Socket — atualizações de status em tempo real
   useEffect(() => {
@@ -46,8 +48,15 @@ export default function ClientePedidos() {
       )
     })
 
+    // Quando o admin fecha a conta, reseta a sessão e limpa os pedidos
+    socket.on('mesa_fechada', () => {
+      sessionStorage.setItem(`sessao_${mesa}`, Date.now().toString())
+      setPedidos([])
+    })
+
     return () => {
       socket.off('status_atualizado')
+      socket.off('mesa_fechada')
       socket.disconnect()
     }
   }, [mesa])
