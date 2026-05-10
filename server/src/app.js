@@ -4,6 +4,7 @@ const cors = require('cors')
 const path = require('path')
 
 const { errorHandler } = require('./middlewares/error.middleware')
+const { limiterApi }   = require('./middlewares/rateLimiter')
 
 const authRoutes        = require('./routes/auth.routes')
 const menuRoutes        = require('./routes/menu.routes')
@@ -41,6 +42,7 @@ app.use(cors({
 }))
 
 app.use(express.json())
+app.use('/api', limiterApi)
 
 // Health check — usado pelo Render para verificar se o processo está vivo
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }))
