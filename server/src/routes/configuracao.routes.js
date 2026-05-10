@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const prisma = require('../lib/prisma')
+const cache  = require('../lib/configCache')
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware')
 const multer = require('multer')
 const path   = require('path')
@@ -16,11 +17,20 @@ const uploadFundo = multer({
   },
 })
 
+function toMap(configs) {
+  return Object.fromEntries(configs.map(c => [c.chave, c.valor]))
+}
+
 // ── Leitura pública do tema ──────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
+    const hit = cache.get()
+    if (hit) return res.json(hit)
+
     const configs = await prisma.configuracao.findMany()
-    res.json(Object.fromEntries(configs.map(c => [c.chave, c.valor])))
+    const data = toMap(configs)
+    cache.set(data)
+    res.json(data)
   } catch (e) { next(e) }
 })
 
@@ -46,7 +56,9 @@ router.post('/', authMiddleware, isAdmin, async (req, res, next) => {
     }
 
     const configs = await prisma.configuracao.findMany()
-    res.json(Object.fromEntries(configs.map(c => [c.chave, c.valor])))
+    const data = toMap(configs)
+    cache.set(data)
+    res.json(data)
   } catch (e) { next(e) }
 })
 
@@ -67,7 +79,9 @@ router.post('/fundo', authMiddleware, isAdmin, uploadFundo.single('imagem'), asy
       create: { chave: 'glass_bg_url', valor: url },
     })
     const configs = await prisma.configuracao.findMany()
-    res.json({ url, configs: Object.fromEntries(configs.map(c => [c.chave, c.valor])) })
+    const data = toMap(configs)
+    cache.set(data)
+    res.json({ url, configs: data })
   } catch (e) { next(e) }
 })
 
@@ -83,7 +97,9 @@ router.delete('/fundo', authMiddleware, isAdmin, async (req, res, next) => {
       create: { chave: 'glass_bg_url', valor: '' },
     })
     const configs = await prisma.configuracao.findMany()
-    res.json({ configs: Object.fromEntries(configs.map(c => [c.chave, c.valor])) })
+    const data = toMap(configs)
+    cache.set(data)
+    res.json({ configs: data })
   } catch (e) { next(e) }
 })
 

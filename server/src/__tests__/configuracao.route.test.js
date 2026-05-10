@@ -1,7 +1,7 @@
 jest.mock('../lib/prisma', () => ({
   configuracao: {
-    upsert:   jest.fn(),
-    findMany: jest.fn(),
+    upsert:     jest.fn(),
+    findMany:   jest.fn(),
     findUnique: jest.fn(),
   },
 }))
@@ -9,21 +9,27 @@ jest.mock('../services/storage.service', () => ({
   uploadFile: jest.fn(),
   deleteFile: jest.fn(),
 }))
-// multer stub — não carrega módulos binários
 jest.mock('multer', () => {
   const multerFn = () => ({ single: () => (req, res, next) => next() })
   multerFn.memoryStorage = () => ({})
   return multerFn
 })
+// Cache mockado: get retorna null por padrão (miss), set/invalidate rastreados
+jest.mock('../lib/configCache', () => ({
+  get:        jest.fn(() => null),
+  set:        jest.fn(),
+  invalidate: jest.fn(),
+}))
 
 const prisma  = require('../lib/prisma')
+const cache   = require('../lib/configCache')
 const express = require('express')
 const request = require('supertest')
 const jwt     = require('jsonwebtoken')
 
-// JWT de teste
 process.env.JWT_SECRET = 'test-secret'
-const tokenAdmin = jwt.sign({ id: 1, email: 'a@b.com', role: 'ADMIN' }, 'test-secret')
+const tokenAdmin = jwt.sign({ id: 1, email: 'a@b.com', role: 'ADMIN' },   'test-secret')
+const tokenSF    = jwt.sign({ id: 3, email: 'sf@b.com', role: 'ADMINSF' }, 'test-secret')
 
 function criarApp() {
   const app = express()
@@ -32,11 +38,14 @@ function criarApp() {
   return app
 }
 
-beforeEach(() => jest.clearAllMocks())
+beforeEach(() => {
+  jest.clearAllMocks()
+  cache.get.mockReturnValue(null) // cache miss por padrão
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('GET /api/configuracoes', () => {
-  test('retorna configs como objeto chave→valor', async () => {
+  test('retorna configs como objeto chave→valor (cache miss → DB)', async () => {
     prisma.configuracao.findMany.mockResolvedValue([
       { chave: 'light_brand', valor: '#C8520A' },
       { chave: 'dark_brand',  valor: '#E8702A' },
@@ -56,13 +65,33 @@ describe('GET /api/configuracoes', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual({})
   })
+
+  test('serve do cache sem bater no banco (cache hit)', async () => {
+    const cached = { light_brand: '#cached', dark_brand: '#aabbcc' }
+    cache.get.mockReturnValue(cached)
+
+    const res = await request(criarApp()).get('/api/configuracoes')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual(cached)
+    expect(prisma.configuracao.findMany).not.toHaveBeenCalled()
+  })
+
+  test('preenche o cache após miss no banco', async () => {
+    const dbData = [{ chave: 'light_brand', valor: '#C8520A' }]
+    prisma.configuracao.findMany.mockResolvedValue(dbData)
+
+    await request(criarApp()).get('/api/configuracoes')
+
+    expect(cache.set).toHaveBeenCalledWith({ light_brand: '#C8520A' })
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('POST /api/configuracoes', () => {
   const configSalva = [
-    { chave: 'light_brand', valor: '#C8520A' },
-    { chave: 'glass_enabled', valor: 'false' },
+    { chave: 'light_brand',   valor: '#C8520A' },
+    { chave: 'glass_enabled', valor: 'false'   },
   ]
 
   beforeEach(() => {
@@ -79,7 +108,6 @@ describe('POST /api/configuracoes', () => {
       .send(payload)
 
     expect(res.status).toBe(200)
-    // Dois upserts — um por chave
     expect(prisma.configuracao.upsert).toHaveBeenCalledTimes(2)
     expect(prisma.configuracao.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -98,6 +126,15 @@ describe('POST /api/configuracoes', () => {
 
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ light_brand: '#C8520A', glass_enabled: 'false' })
+  })
+
+  test('atualiza o cache com os dados recém-salvos', async () => {
+    await request(criarApp())
+      .post('/api/configuracoes')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ light_brand: '#C8520A' })
+
+    expect(cache.set).toHaveBeenCalledWith({ light_brand: '#C8520A', glass_enabled: 'false' })
   })
 
   test('retorna 400 quando body está vazio', async () => {
@@ -145,8 +182,6 @@ describe('POST /api/configuracoes', () => {
   })
 
   test('aceita ADMINSF além de ADMIN', async () => {
-    const tokenSF = jwt.sign({ id: 3, email: 'sf@b.com', role: 'ADMINSF' }, 'test-secret')
-
     const res = await request(criarApp())
       .post('/api/configuracoes')
       .set('Authorization', `Bearer ${tokenSF}`)
@@ -155,9 +190,22 @@ describe('POST /api/configuracoes', () => {
     expect(res.status).toBe(200)
   })
 
+  test('bloqueia feature_* para ADMIN, permite para ADMINSF', async () => {
+    const resAdmin = await request(criarApp())
+      .post('/api/configuracoes')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ feature_shows: '0' })
+    expect(resAdmin.status).toBe(403)
+
+    const resSF = await request(criarApp())
+      .post('/api/configuracoes')
+      .set('Authorization', `Bearer ${tokenSF}`)
+      .send({ feature_shows: '0' })
+    expect(resSF.status).toBe(200)
+  })
+
   test('retorna 500 quando Prisma lança erro', async () => {
     prisma.configuracao.upsert.mockRejectedValue(new Error('DB error'))
-    // error middleware precisa estar registrado
     const app = criarApp()
     app.use((err, req, res, next) => res.status(500).json({ error: err.message }))
 
