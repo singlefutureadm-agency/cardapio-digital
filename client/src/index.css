@@ -36,6 +36,13 @@
   --shadow-brand:   0 8px 24px rgba(200,82,10,0.25);
   --shadow-glow:    0 0 0 3px rgba(200,82,10,0.12);
 
+  /* Cursor — derivadas de --brand via color-mix (atualizam com o tema) */
+  --cursor-dot:   var(--brand);
+  --cursor-glow:  color-mix(in srgb, var(--brand) 90%, transparent);
+  --cursor-halo:  color-mix(in srgb, var(--brand) 50%, transparent);
+  --cursor-ring:  color-mix(in srgb, var(--brand) 55%, transparent);
+  --cursor-trail: color-mix(in srgb, var(--brand) 12%, transparent);
+
   --radius-sm:      8px;
   --radius-md:      12px;
   --radius-lg:      16px;

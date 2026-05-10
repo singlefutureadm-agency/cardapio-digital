@@ -103,11 +103,11 @@ export default function GlobalCursor() {
           width: 8,
           height: 8,
           borderRadius: '50%',
-          background: 'var(--brand)',
+          background: 'var(--cursor-dot)',
           transform: 'translate(-50%,-50%)',
           top: 0,
           left: 0,
-          boxShadow: '0 0 6px rgba(200,82,10,0.9), 0 0 14px rgba(200,82,10,0.5)',
+          boxShadow: '0 0 6px var(--cursor-glow), 0 0 14px var(--cursor-halo)',
           animation: 'cursorPulse 2s ease-in-out infinite',
         }}
       />
@@ -121,7 +121,7 @@ export default function GlobalCursor() {
           width: 32,
           height: 32,
           borderRadius: '50%',
-          border: '1.5px solid rgba(200,82,10,0.55)',
+          border: '1.5px solid var(--cursor-ring)',
           transform: 'translate(-50%,-50%)',
           top: 0,
           left: 0,
@@ -138,21 +138,21 @@ export default function GlobalCursor() {
           width: 20,
           height: 20,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(200,82,10,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--cursor-trail) 0%, transparent 70%)',
           transform: 'translate(-50%,-50%)',
           top: 0,
           left: 0,
         }}
       />
 
-      {/* Animação de pulse do dot */}
+      {/* Animação de pulse — usa as mesmas vars do tema */}
       <style>{`
         @keyframes cursorPulse {
           0%, 100% {
-            box-shadow: 0 0 6px rgba(200,82,10,0.9), 0 0 14px rgba(200,82,10,0.5);
+            box-shadow: 0 0 6px var(--cursor-glow), 0 0 14px var(--cursor-halo);
           }
           50% {
-            box-shadow: 0 0 10px rgba(200,82,10,1), 0 0 24px rgba(200,82,10,0.7), 0 0 40px rgba(200,82,10,0.3);
+            box-shadow: 0 0 10px var(--cursor-glow), 0 0 24px var(--cursor-halo), 0 0 40px var(--cursor-trail);
           }
         }
       `}</style>
