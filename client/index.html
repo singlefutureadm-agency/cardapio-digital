@@ -8,37 +8,42 @@
     <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- VLibras — Língua Brasileira de Sinais (Gov.br) -->
+    <!-- VLibras — Língua Brasileira de Sinais (Gov.br) — carregado após DOMContentLoaded para não bloquear render -->
     <div vw class="enabled">
       <div vw-access-button class="active"></div>
       <div vw-plugin-wrapper>
         <div class="vw-plugin-top-wrapper"></div>
       </div>
     </div>
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>
-      new window.VLibras.Widget('https://vlibras.gov.br/app');
+      document.addEventListener('DOMContentLoaded', function () {
+        var s = document.createElement('script');
+        s.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+        s.onload = function () {
+          new window.VLibras.Widget('https://vlibras.gov.br/app');
 
-      // Corrige barra dupla nas URLs das imagens do VLibras (bug do CDN deles)
-      (function fixVLibrasUrls() {
-        var observer = new MutationObserver(function() {
-          document.querySelectorAll('[vw-access-button] img, [vw-plugin-wrapper] img').forEach(function(img) {
-            if (img.src && img.src.includes('//assets/')) {
-              img.src = img.src.replace('//assets/', '/assets/');
-            }
-            if (img.getAttribute('data-src') && img.getAttribute('data-src').includes('//assets/')) {
-              img.setAttribute('data-src', img.getAttribute('data-src').replace('//assets/', '/assets/'));
-            }
+          // Corrige barra dupla nas URLs das imagens do VLibras (bug do CDN deles)
+          var observer = new MutationObserver(function () {
+            document.querySelectorAll('[vw-access-button] img, [vw-plugin-wrapper] img').forEach(function (img) {
+              if (img.src && img.src.includes('//assets/')) {
+                img.src = img.src.replace('//assets/', '/assets/');
+              }
+              if (img.getAttribute('data-src') && img.getAttribute('data-src').includes('//assets/')) {
+                img.setAttribute('data-src', img.getAttribute('data-src').replace('//assets/', '/assets/'));
+              }
+            });
           });
-        });
-        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-src'] });
-      })();
+          observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-src'] });
+        };
+        document.body.appendChild(s);
+      });
     </script>
   </body>
 </html>

@@ -26,6 +26,7 @@ model MenuItem {
   pedidoItens PedidoItem[]
   imagemUrl   String?
 
+  @@index([categoriaId])
   @@map("menu_items")
 }
 
@@ -42,6 +43,11 @@ model Pedido {
   user      User?        @relation(fields: [userId], references: [id])
   itens     PedidoItem[]
   pagamento Pagamento?
+
+  @@index([status, createdAt])
+  @@index([mesa, status])
+  @@index([mesaId])
+  @@index([userId])
 }
 
 model PedidoItem {
@@ -54,6 +60,8 @@ model PedidoItem {
   pedido     Pedido   @relation(fields: [pedidoId], references: [id])
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
 
+  @@index([pedidoId])
+  @@index([menuItemId])
   @@map("pedido_items")
 }
 
@@ -128,6 +136,8 @@ model RespostaPreferencia {
   opcao      OpcaoPreferencia    @relation(fields: [opcaoId], references: [id])
 
   @@unique([userId, perguntaId])
+  @@index([opcaoId])
+  @@index([perguntaId])
 }
 
 model Newsletter {

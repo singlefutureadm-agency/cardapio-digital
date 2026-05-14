@@ -1,7 +1,8 @@
 require('dotenv').config()
-const express = require('express')
-const cors = require('cors')
-const path = require('path')
+const express     = require('express')
+const cors        = require('cors')
+const compression = require('compression')
+const path        = require('path')
 
 const { errorHandler } = require('./middlewares/error.middleware')
 const { limiterApi }   = require('./middlewares/rateLimiter')
@@ -41,6 +42,7 @@ app.use(cors({
   credentials: true,
 }))
 
+app.use(compression())
 app.use(express.json())
 app.use('/api', limiterApi)
 

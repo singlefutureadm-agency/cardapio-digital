@@ -160,12 +160,25 @@ function aplicarSiteIdentity(config) {
   }
 }
 
+const CONFIG_CACHE_KEY = 'sf_theme_config'
+
+function readConfigCache() {
+  try {
+    const raw = sessionStorage.getItem(CONFIG_CACHE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function writeConfigCache(data) {
+  try { sessionStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(data)) } catch {}
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setTheme]           = useState(() =>
     localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   )
-  const [config, setConfig]         = useState({})
+  const [config, setConfig]         = useState(() => readConfigCache() ?? {})
   const [carregando, setCarregando] = useState(true)
 
   // Ref sempre com o config mais recente, evita closure stale no toggle()
@@ -179,10 +192,20 @@ export function ThemeProvider({ children }) {
     document.documentElement.setAttribute('data-theme', modo)
     aplicarTheme(buildTheme(modo, {}))
 
+    // Aplica cache imediatamente se existir, evitando flash sem tema
+    const cached = readConfigCache()
+    if (cached) {
+      configRef.current = cached
+      aplicarTheme(buildTheme(modo, cached))
+      aplicarGlass(cached.glass_enabled === 'true', cached)
+      aplicarSiteIdentity(cached)
+    }
+
     api.get('/configuracoes')
       .then(({ data }) => {
         setConfig(data)
         configRef.current = data
+        writeConfigCache(data)
         document.documentElement.setAttribute('data-theme', modo)
         aplicarTheme(buildTheme(modo, data))
         aplicarGlass(data.glass_enabled === 'true', data)
@@ -205,6 +228,7 @@ export function ThemeProvider({ children }) {
     const { data } = await api.post('/configuracoes', novasConfigs)
     setConfig(data)
     configRef.current = data
+    writeConfigCache(data)
     // Re-aplica tema, glass e identidade do site com os dados recém-salvos
     document.documentElement.setAttribute('data-theme', theme)
     aplicarTheme(buildTheme(theme, data))
@@ -229,6 +253,7 @@ export function ThemeProvider({ children }) {
     const emptyConfig = {}
     setConfig(emptyConfig)
     configRef.current = emptyConfig
+    writeConfigCache(emptyConfig)
     document.documentElement.setAttribute('data-theme', theme)
     aplicarTheme(buildTheme(theme, emptyConfig))
     aplicarGlass(false, {})

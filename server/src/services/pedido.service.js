@@ -94,7 +94,7 @@ const listarPedidos = async () => {
       createdAt: { gte: hoje },
     },
     include: {
-      itens: { include: { menuItem: true } },
+      itens: { include: { menuItem: { select: { id: true, nome: true, preco: true } } } },
       pagamento: true,
     },
     orderBy: { createdAt: 'asc' },
