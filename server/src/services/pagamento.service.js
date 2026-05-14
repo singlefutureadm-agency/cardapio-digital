@@ -180,6 +180,13 @@ async function fecharMesa(mesa, metodo, io) {
       update: { status: 'PAGO', metodo, tipo: 'GARCOM' },
       create: { pedidoId: pedido.id, status: 'PAGO', metodo, tipo: 'GARCOM' },
     })
+    // Garante que o pedido aparece como finalizado na aba do cliente
+    if (pedido.status !== 'ENTREGUE') {
+      await prisma.pedido.update({
+        where: { id: pedido.id },
+        data: { status: 'ENTREGUE' },
+      })
+    }
   }
   for (const c of chamadas) {
     await prisma.chamadaGarcom.update({ where: { id: c.id }, data: { status: 'ATENDIDO' } })

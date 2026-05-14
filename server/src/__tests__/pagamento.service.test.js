@@ -1,5 +1,5 @@
 jest.mock('../lib/prisma', () => ({
-  pedido:        { findMany: jest.fn(), findUnique: jest.fn() },
+  pedido:        { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   pagamento:     { upsert: jest.fn(), update: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
   chamadaGarcom: { findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
 }))
@@ -22,6 +22,7 @@ describe('fecharMesa', () => {
   beforeEach(() => {
     prisma.chamadaGarcom.findFirst.mockResolvedValue(null) // sem sessão anterior
     prisma.pedido.findMany.mockResolvedValue(pedidosMock)
+    prisma.pedido.update.mockResolvedValue({})
     prisma.pagamento.upsert.mockResolvedValue({})
     prisma.chamadaGarcom.findMany.mockResolvedValue(chamadaMock)
     prisma.chamadaGarcom.update.mockResolvedValue({})
@@ -85,6 +86,37 @@ describe('fecharMesa', () => {
     )
     expect(resultado.pedidosFechados).toBe(1)
     expect(resultado.total).toBeCloseTo(30.00, 2)
+  })
+
+  test('marca pedidos como ENTREGUE ao fechar mesa', async () => {
+    const pedidosAbertos = [
+      { id: 10, mesa: '3', total: '42.90', status: 'NOVO',      pagamento: null },
+      { id: 11, mesa: '3', total: '18.90', status: 'PREPARANDO', pagamento: null },
+    ]
+    prisma.pedido.findMany.mockResolvedValue(pedidosAbertos)
+
+    await fecharMesa('3', 'CARTAO', null)
+
+    expect(prisma.pedido.update).toHaveBeenCalledTimes(2)
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 10 },
+        data:  { status: 'ENTREGUE' },
+      })
+    )
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 11 },
+        data:  { status: 'ENTREGUE' },
+      })
+    )
+  })
+
+  test('não chama pedido.update quando pedido já está ENTREGUE', async () => {
+    // pedidosMock já tem status ENTREGUE — não deve chamar update
+    await fecharMesa('3', 'CARTAO', null)
+
+    expect(prisma.pedido.update).not.toHaveBeenCalled()
   })
 
   test('usa fronteira de sessão baseada na última chamada ATENDIDO', async () => {
