@@ -97,6 +97,17 @@ describe('listarPedidos', () => {
     const hoje = new Date()
     expect(gte.toDateString()).toBe(hoje.toDateString())
   })
+
+  test('retorna apenas id/nome/preco do menuItem (select otimizado)', async () => {
+    prisma.pedido.findMany.mockResolvedValue([])
+
+    await listarPedidos()
+
+    const call = prisma.pedido.findMany.mock.calls[0][0]
+    const menuItemSelect = call.include?.itens?.include?.menuItem?.select
+
+    expect(menuItemSelect).toEqual({ id: true, nome: true, preco: true })
+  })
 })
 
 describe('atualizarStatus', () => {
